@@ -1,625 +1,701 @@
 <!DOCTYPE html>
 <html lang="nl">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Student ID Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', Arial, sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            margin: 20px;
-        }
-
-        #apLogo {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 200px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #E30613;
-            font-size: 36px;
-            margin-bottom: 20px;
-        }
-
-        input[type="file"],
-        button,
-        input[type="text"],
-        input[type="date"],
-        input[type="time"] {
-            display: block;
-            margin: 10px 0;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 500px;
-            box-sizing: border-box;
-        }
-
-        button {
-            background-color: #E30613;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-        }
-
-        button:hover {
-            background-color: #c00510;
-            transform: scale(1.02);
-        }
-
-        button:disabled {
-            background-color: #ddd;
-            color: #999;
-            cursor: not-allowed;
-        }
-
-        .buttonRow {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .buttonRow button {
-            flex: 1 1 auto;
-            max-width: 200px;
-        }
-
-        #fileName {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        #fileName input[type="text"] {
-            display: inline-block;
-            width: auto;
-            max-width: 300px;
-            margin-left: 10px;
-            font-weight: normal;
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background-color: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-
-        th,
-        td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-
-        th {
-            background-color: #E30613;
-            color: white;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        .match {
-            background-color: #dff6e0 !important;
-        }
-
-        .no-match {
-            background-color: #ffe6e6 !important;
-        }
-
-        .success {
-            color: green;
-            font-weight: bold;
-        }
-
-        .error {
-            color: #E30613;
-            font-weight: bold;
-        }
-
-        .focusCheckbox {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-		.switch {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 34px;
-}
-
-	.switch input {
-	  display: none;
-	}
-
-	.slider {
-	  position: absolute;
-	  cursor: pointer;
-	  top: 0; left: 0; right: 0; bottom: 0;
-	  background-color: #ccc;
-	  transition: .4s;
-	}
-
-	.slider:before {
-	  position: absolute;
-	  content: "";
-	  height: 26px; width: 26px;
-	  left: 4px;
-	  bottom: 4px;
-	  background-color: white;
-	  transition: .4s;
-	}
-
-	input:checked + .slider {
-	  background-color: #2196F3;
-	}
-
-	input:checked + .slider:before {
-	  transform: translateX(26px);
-	}
-
-	.slider.round {
-	  border-radius: 34px;
-	}
-
-	.slider.round:before {
-	  border-radius: 50%;
-	}
-
-    .row-in {
-     background-color: #fff7cc !important; /* GEEL */
-    }
-
-.row-out {
-    background-color: #dff6e0 !important; /* GROEN */
-}
-    </style>
-</head>
-
-<body>
-    <img src="logo.jpg" alt="AP Hogeschool Antwerpen" id="apLogo" />
-    <h1>Student ID Scanner</h1>
-
-    <div class="buttonRow">
-        <button id="chooseFileBtn" onclick="document.getElementById('fileInput').click()">Pas bestand kiezen</button>
-        <input type="file" id="fileInput" accept=".xlsx" style="display: none;" tabindex="-1" />
-        <button id="exportExcelBtn" onclick="exportToExcel()" disabled>Exporteer Excel</button>
-        <button id="exportPdfBtn" onclick="exportToPDF()" disabled>Exporteer PDF</button>
-		<label class="switch">
-		  <input type="checkbox" id="scanModeSwitch" onchange="toggleScanMode()">
-		  <span class="slider round"></span>
-		</label>
-		<span id="scanModeLabel">IN</span>
-    </div>
-
-    <div class="focusCheckbox">
-		<input type="checkbox" id="focusToggle" onchange="toggleFocus()">
-        <label for="toggleFocusCheckbox">Focus scanveld actief</label>
-    </div>
-
-    <p id="fileName">
-        Examen:
-        <input type="text" id="examInput" placeholder="" oninput="updateExamName()" />
-    </p>
-    <p id="examMoment">
-        Datum:
-        <input type="date" id="examDate" />
-	</p>
-    <p id="examMomenttime">
-        Uur:
-        <input type="time" id="examTime" />
-    </p>
-    <p id="examLocation">
-    Lokaal:
-    <input type="text" id="examLocationInput" placeholder="bv. Lokaal 123" />
-    </p>
-
-    <p id="totalStudents">Aantal studenten in lijst: 0</p>
-    <p id="loadingSpinner">Bezig met laden...</p>
-    <p id="scanStatus">Nog niets gescand</p>
-    <p>In gescand: <span id="scanCounter">0</span> / <span id="scanTotal">0</span></p>
-	<p>OUT gescand: <span id="outCounter">0</span> / <span id="scanTotalOut">0</span></p>
-	<input type="text" id="manualInput" placeholder="Focus hier, scan barcode met scanner" onkeypress="handleManualInput(event)" />
-
-    <table id="dataTable"></table>
-
-    <script>
-    let scannedCode = "Aanwezig";
-    let notScannedCode = "";
-
-    let examName = "";
-    let excelData = [];
-    let scanCount = 0;
-    let outCount = 0;
-    let totalStudents = 0;
-
-    let scanMode = 'in';  // standaard
-    let focusEnabled = false;  // standaard focus uit
-	
-	
-	document.getElementById("scanStatus").innerHTML = "Nog niets gescand";
-    document.getElementById("fileInput").addEventListener("change", function (event) {
-        document.getElementById("loadingSpinner").style.display = "block";
-
-        document.getElementById("chooseFileBtn").classList.add("chosen");
-        document.getElementById("fileName").classList.add("chosen");
-
-        scanCount = 0;
-        outCount = 0;
-        document.getElementById("scanCounter").textContent = scanCount;
-        document.getElementById("outCounter").textContent = outCount;
-
-        let file = event.target.files[0];
-        let reader = new FileReader();
-
-        reader.onload = function (e) {
-            let data = new Uint8Array(e.target.result);
-            let workbook = XLSX.read(data, { type: 'array' });
-            let sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-            excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 }).map(row => row.slice(0, 3));
-
-            let table = document.getElementById("dataTable");
-            table.innerHTML = "";
-
-            // examName veilig extraheren
-            let lastDashIndex = file.name.lastIndexOf("-");
-            if (lastDashIndex !== -1) {
-                examName = file.name.substring(0, lastDashIndex).trim();
-            } else {
-                examName = file.name;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Student ID Scanner</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+        <style>
+            body {
+                font-family: "Roboto", Arial, sans-serif;
+                background-color: #f9f9f9;
+                color: #333;
+                margin: 20px;
             }
-            document.getElementById("fileName").textContent = `Examen: ${examName}`;
 
-            // table vullen
-            excelData.forEach((row, index) => {
-                if (index === 0) {
-                    row.push("Scanned In");
-                    row.push("Scanned Out");
-                } else {
-                    row.push("");
-                    row.push("");
-                }
+            #apLogo {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                width: 200px;
+            }
 
-                let tr = document.createElement("tr");
-                row.forEach(cell => {
-                    let cellElement = document.createElement(index === 0 ? "th" : "td");
-                    cellElement.textContent = cell;
-                    tr.appendChild(cellElement);
-                });
-                table.appendChild(tr);
+            h1 {
+                text-align: center;
+                color: #e30613;
+                font-size: 36px;
+                margin-bottom: 20px;
+            }
+
+            input[type="file"],
+            button,
+            input[type="text"],
+            input[type="date"],
+            input[type="time"] {
+                display: block;
+                margin: 10px 0;
+                padding: 12px 16px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                width: 100%;
+                max-width: 500px;
+                box-sizing: border-box;
+            }
+
+            button {
+                background-color: #e30613;
+                color: white;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.3s ease, transform 0.1s ease;
+            }
+
+            button:hover {
+                background-color: #c00510;
+                transform: scale(1.02);
+            }
+
+            button:disabled {
+                background-color: #ddd;
+                color: #999;
+                cursor: not-allowed;
+            }
+
+            .buttonRow {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            .buttonRow button {
+                flex: 1 1 auto;
+                max-width: 200px;
+            }
+
+            #fileName {
+                font-weight: bold;
+                margin-top: 10px;
+            }
+
+            #fileName input[type="text"] {
+                display: inline-block;
+                width: auto;
+                max-width: 300px;
+                margin-left: 10px;
+                font-weight: normal;
+                padding: 4px 8px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                background-color: white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+            }
+
+            th,
+            td {
+                padding: 12px 16px;
+                text-align: left;
+                border-bottom: 1px solid #eee;
+            }
+
+            th {
+                background-color: #e30613;
+                color: white;
+                text-transform: uppercase;
+                font-weight: bold;
+            }
+
+            .match {
+                background-color: #dff6e0 !important;
+            }
+
+            .no-match {
+                background-color: #ffe6e6 !important;
+            }
+
+            .success {
+                color: green;
+                font-weight: bold;
+            }
+
+            .error {
+                color: #e30613;
+                font-weight: bold;
+            }
+
+            .focusCheckbox {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            .switch {
+                position: relative;
+                display: inline-block;
+                width: 60px;
+                height: 34px;
+            }
+
+            .switch input {
+                display: none;
+            }
+
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #ccc;
+                transition: 0.4s;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 26px;
+                width: 26px;
+                left: 4px;
+                bottom: 4px;
+                background-color: white;
+                transition: 0.4s;
+            }
+
+            input:checked + .slider {
+                background-color: #2196f3;
+            }
+
+            input:checked + .slider:before {
+                transform: translateX(26px);
+            }
+
+            .slider.round {
+                border-radius: 34px;
+            }
+
+            .slider.round:before {
+                border-radius: 50%;
+            }
+
+            .row-in {
+                background-color: #fff7cc !important; /* GEEL */
+            }
+
+            .row-out {
+                background-color: #dff6e0 !important; /* GROEN */
+            }
+        </style>
+    </head>
+
+    <body>
+        <img src="logo.jpg" alt="AP Hogeschool Antwerpen" id="apLogo" />
+        <h1>Student ID Scanner</h1>
+
+        <div class="buttonRow">
+            <button id="chooseFileBtn" onclick="document.getElementById('fileInput').click()">Pas bestand kiezen</button>
+            <input type="file" id="fileInput" accept=".xlsx" style="display: none;" tabindex="-1" />
+            <button id="exportExcelBtn" onclick="exportToExcel()" disabled>Exporteer Excel</button>
+            <button id="exportPdfBtn" onclick="exportToPDF()" disabled>Exporteer PDF</button>
+            <label class="switch">
+                <input type="checkbox" id="scanModeSwitch" onchange="toggleScanMode()" />
+                <span class="slider round"></span>
+            </label>
+            <span id="scanModeLabel">IN</span>
+        </div>
+
+        <div class="focusCheckbox">
+            <input type="checkbox" id="focusToggle" onchange="toggleFocus()" />
+            <label for="toggleFocusCheckbox">Focus scanveld actief</label>
+        </div>
+
+        <p id="fileName">
+            Examen:
+            <input type="text" id="examInput" placeholder="" oninput="updateExamName()" />
+        </p>
+        <p id="examMoment">
+            Datum:
+            <input type="date" id="examDate" />
+        </p>
+        <p id="examMomenttime">
+            Uur:
+            <input type="time" id="examTime" />
+        </p>
+        <p id="examLocation">
+            Lokaal:
+            <input type="text" id="examLocationInput" placeholder="bv. Lokaal 123" />
+        </p>
+
+        <p id="totalStudents">Aantal studenten in lijst: 0</p>
+        <p id="loadingSpinner">Bezig met laden...</p>
+        <p id="scanStatus">Nog niets gescand</p>
+        <p>In gescand: <span id="scanCounter">0</span> / <span id="scanTotal">0</span></p>
+        <p>OUT gescand: <span id="outCounter">0</span> / <span id="scanTotalOut">0</span></p>
+        <input type="text" id="manualInput" placeholder="Focus hier, scan barcode met scanner" onkeypress="handleManualInput(event)" />
+
+        <table id="dataTable"></table>
+
+        <script>
+            let scannedCode = "Aanwezig";
+            let notScannedCode = "";
+
+            let examName = "";
+            let excelData = [];
+            let scanCount = 0;
+            let outCount = 0;
+            let totalStudents = 0;
+
+            let scanMode = "in"; // standaard
+            let focusEnabled = false; // standaard focus uit
+
+            document.getElementById("scanStatus").innerHTML = "Nog niets gescand";
+            document.getElementById("fileInput").addEventListener("change", function (event) {
+                document.getElementById("loadingSpinner").style.display = "block";
+
+                document.getElementById("chooseFileBtn").classList.add("chosen");
+                document.getElementById("fileName").classList.add("chosen");
+
+                scanCount = 0;
+                outCount = 0;
+                document.getElementById("scanCounter").textContent = scanCount;
+                document.getElementById("outCounter").textContent = outCount;
+
+                let file = event.target.files[0];
+                let reader = new FileReader();
+
+                reader.onload = function (e) {
+                    let data = new Uint8Array(e.target.result);
+                    let workbook = XLSX.read(data, { type: "array" });
+                    let sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+                    excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 }).map((row) => row.slice(0, 3));
+
+                    let table = document.getElementById("dataTable");
+                    table.innerHTML = "";
+
+                    // examName veilig extraheren
+                    let lastDashIndex = file.name.lastIndexOf("-");
+                    if (lastDashIndex !== -1) {
+                        examName = file.name.substring(0, lastDashIndex).trim();
+                    } else {
+                        examName = file.name;
+                    }
+
+                    const input = document.getElementById("examInput");
+                    if (input) {
+                        input.value = examName;
+                        sessionStorage.setItem("examName", examName);
+                    }
+                    // table vullen
+                    excelData.forEach((row, index) => {
+                        if (index === 0) {
+                            row.push("Scanned In");
+                            row.push("Scanned Out");
+                        } else {
+                            row.push("");
+                            row.push("");
+                        }
+
+                        let tr = document.createElement("tr");
+                        row.forEach((cell) => {
+                            let cellElement = document.createElement(index === 0 ? "th" : "td");
+                            cellElement.textContent = cell;
+                            tr.appendChild(cellElement);
+                        });
+                        table.appendChild(tr);
+                    });
+
+                    totalStudents = excelData.length - 1;
+                    document.getElementById("totalStudents").textContent = `Aantal studenten in lijst: ${totalStudents}`;
+                    document.getElementById("scanTotal").textContent = totalStudents;
+                    document.getElementById("scanTotalOut").textContent = totalStudents;
+
+                    if (excelData.length > 1) {
+                        // er moet minstens 1 rij + header zijn
+                        document.getElementById("exportExcelBtn").disabled = false;
+                        document.getElementById("exportPdfBtn").disabled = false;
+                    } else {
+                        document.getElementById("exportExcelBtn").disabled = true;
+                        document.getElementById("exportPdfBtn").disabled = true;
+                    }
+
+                    document.getElementById("loadingSpinner").style.display = "none";
+
+                    if (focusEnabled) document.getElementById("manualInput").focus();
+
+                    sessionStorage.setItem("excelData", JSON.stringify(excelData));
+                };
+
+                reader.readAsArrayBuffer(file);
             });
 
-            totalStudents = excelData.length - 1;
-            document.getElementById("totalStudents").textContent = `Aantal studenten in lijst: ${totalStudents}`;
-            document.getElementById("scanTotal").textContent = totalStudents;
-            document.getElementById("scanTotalOut").textContent = totalStudents;
+            function getCurrentTimeString() {
+                let now = new Date();
+                return now.toLocaleTimeString("nl-BE", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                });
+            }
 
-           if (excelData.length > 1) {   // er moet minstens 1 rij + header zijn
-				document.getElementById("exportExcelBtn").disabled = false;
-				document.getElementById("exportPdfBtn").disabled = false;
-				} 
-		else {
-				document.getElementById("exportExcelBtn").disabled = true;
-				document.getElementById("exportPdfBtn").disabled = true;
-			}
+            function checkBarcode(IDtoCheck) {
+                let matchFound = false;
+                let table = document.getElementById("dataTable");
+                let rows = Array.from(table.rows).slice(1);
+                let firstName, lastName;
 
-            document.getElementById("loadingSpinner").style.display = "none";
+                for (let row of rows) {
+                    let idCell = row.cells[2];
+                    if (idCell && idCell.textContent === IDtoCheck) {
+                        // === Reset alle mogelijke klassen eerst ===
+                        let rowIndex = excelData.findIndex((dataRow) => dataRow[2] === IDtoCheck);
+                        row.classList.remove("match", "no-match", "row-in", "row-out");
 
-            if (focusEnabled) document.getElementById("manualInput").focus();
-        };
+                        firstName = row.cells[0].textContent;
+                        lastName = row.cells[1].textContent;
 
-        reader.readAsArrayBuffer(file);
-    });
+                        if (scanMode === "in") {
+                            if (row.cells[3].textContent.trim() === "" || row.cells[3].textContent === "NVT") {
+                                row.cells[3].textContent = getCurrentTimeString();
+                                row.cells[4].textContent = ""; // reset Out
 
-    function getCurrentTimeString() {
-        let now = new Date();
-        return now.toLocaleTimeString('nl-BE', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    }
+                                // === Geef GEEL bij IN ===
+                                row.classList.add("row-in");
+                                excelData[rowIndex][3] = row.cells[3].textContent;
+                                excelData[rowIndex][4] = row.cells[4].textContent;
+                            } else {
+                                document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
+                                return;
+                            }
+                        } else if (scanMode === "out") {
+                            if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent !== "NVT") {
+                                if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
+                                    row.cells[4].textContent = getCurrentTimeString();
 
-   function checkBarcode(IDtoCheck) {
-    let matchFound = false;
-    let table = document.getElementById("dataTable");
-    let rows = Array.from(table.rows).slice(1);
-    let firstName, lastName;
+                                    // === Geef GROEN bij OUT ===
+                                    row.classList.add("row-out");
+                                    excelData[rowIndex][4] = row.cells[4].textContent;
+                                } else {
+                                    document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al OUT gescand → dubbele OUT niet toegestaan</span>`;
+                                    return;
+                                }
+                            } else {
+                                document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) heeft nog geen IN-scan → OUT niet toegestaan</span>`;
+                                return;
+                            }
+                        }
 
-    for (let row of rows) {
-        let idCell = row.cells[2];
-        if (idCell && idCell.textContent === IDtoCheck) {
-
-            // === Reset alle mogelijke klassen eerst ===
-            row.classList.remove("match", "no-match", "row-in", "row-out");
-
-            firstName = row.cells[0].textContent;
-            lastName = row.cells[1].textContent;
-
-            if (scanMode === 'in') {
-                if (row.cells[3].textContent.trim() === "" || row.cells[3].textContent === "NVT") {
-                    row.cells[3].textContent = getCurrentTimeString();
-                    row.cells[4].textContent = ""; // reset Out
-
-                    // === Geef GEEL bij IN ===
-                    row.classList.add("row-in");
-
-                } else {
-                    document.getElementById("scanStatus").innerHTML =
-                        `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
-                    return;
-                }
-            } else if (scanMode === 'out') {
-                if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent !== "NVT") {
-                    if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
-                        row.cells[4].textContent = getCurrentTimeString();
-
-                        // === Geef GROEN bij OUT ===
-                        row.classList.add("row-out");
-
-                    } else {
-                        document.getElementById("scanStatus").innerHTML =
-                            `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al OUT gescand → dubbele OUT niet toegestaan</span>`;
-                        return;
+                        matchFound = true;
+                        table.insertBefore(row, table.rows[1]); // verplaats naar boven
+                        break;
                     }
+                }
+
+                if (matchFound) {
+                    document.getElementById("scanStatus").innerHTML = `<span class='success'>[${scanMode.toUpperCase()}] Gescanned: ${firstName} ${lastName} (${IDtoCheck})</span>`;
                 } else {
-                    document.getElementById("scanStatus").innerHTML =
-                        `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) heeft nog geen IN-scan → OUT niet toegestaan</span>`;
-                    return;
+                    document.getElementById("scanStatus").innerHTML = `<span class='error'>${IDtoCheck} staat niet in de lijst</span>`;
+                }
+
+                updateInOutCounters();
+                sessionStorage.setItem("excelData", JSON.stringify(excelData));
+            }
+
+            function updateInOutCounters() {
+                let table = document.getElementById("dataTable");
+                let rows = Array.from(table.rows).slice(1);
+
+                let inCount = 0;
+                let outCountTemp = 0;
+
+                for (let row of rows) {
+                    if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent.trim() !== "NVT") {
+                        inCount++;
+                    }
+                    if (row.cells[4].textContent.trim() !== "" && row.cells[4].textContent.trim() !== "NVT") {
+                        outCountTemp++;
+                    }
+                }
+
+                document.getElementById("scanCounter").textContent = inCount;
+                document.getElementById("outCounter").textContent = outCountTemp;
+
+                // Correcte elementen gebruiken → dit bestaat WEL in jouw HTML:
+                document.getElementById("scanTotal").textContent = totalStudents;
+                document.getElementById("scanTotalOut").textContent = totalStudents;
+            }
+
+            function handleManualInput(event) {
+                if (event.key === "Enter") {
+                    let input = event.target.value.trim();
+                    if (input !== "") {
+                        let cleaned = cleanBarcode(input);
+                        if (cleaned !== "") {
+                            checkBarcode(cleaned);
+                        }
+                        event.target.value = ""; // *** dit volstaat! ***
+                        if (focusEnabled) {
+                            event.target.focus(); // optioneel: focus behouden
+                        }
+                    }
                 }
             }
 
-            matchFound = true;
-            table.insertBefore(row, table.rows[1]); // verplaats naar boven
-            break;
-        }
-    }
-
-    // === Toon status bovenaan ===
-    if (matchFound) {
-        document.getElementById("scanStatus").innerHTML =
-            `<span class='success'>[${scanMode.toUpperCase()}] Gescanned: ${firstName} ${lastName} (${IDtoCheck})</span>`;
-    } else {
-        document.getElementById("scanStatus").innerHTML =
-            `<span class='error'>${IDtoCheck} staat niet in de lijst</span>`;
-        // Geen rij kleuren bij fout → geen row.classList.add()
-    }
-
-    updateInOutCounters();
-}
-
-
-    function updateInOutCounters() {
-    let table = document.getElementById("dataTable");
-    let rows = Array.from(table.rows).slice(1);
-
-    let inCount = 0;
-    let outCountTemp = 0;
-
-    for (let row of rows) {
-        if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent.trim() !== "NVT") {
-            inCount++;
-        }
-        if (row.cells[4].textContent.trim() !== "" && row.cells[4].textContent.trim() !== "NVT") {
-            outCountTemp++;
-        }
-    }
-
-    document.getElementById("scanCounter").textContent = inCount;
-    document.getElementById("outCounter").textContent = outCountTemp;
-
-    // Correcte elementen gebruiken → dit bestaat WEL in jouw HTML:
-    document.getElementById("scanTotal").textContent = totalStudents;
-    document.getElementById("scanTotalOut").textContent = totalStudents;
-}
-
-
-	function handleManualInput(event) {
-    if (event.key === "Enter") {
-        let input = event.target.value.trim();
-        if (input !== "") {
-            let cleaned = cleanBarcode(input);
-            if (cleaned !== "") {
-                checkBarcode(cleaned);
-            }
-            event.target.value = "";    // *** dit volstaat! ***
-            if (focusEnabled) {
-                event.target.focus();   // optioneel: focus behouden
-            }
-        }
-    }
-}
-
-	function cleanBarcode(barcode) {
-    if (barcode.length >= 8) {
-        barcode = barcode.substring((barcode.length - 2) - 6, barcode.length - 2);
-        return "s" + barcode + "@ap.be";
-    } else {
-        return barcode;
-    }
-}
-
-
-    function toggleScanMode() {
-        scanMode = document.getElementById('scanModeSwitch').checked ? 'out' : 'in';
-        document.getElementById('scanModeLabel').textContent = scanMode.toUpperCase();
-    }
-
-    function toggleFocus() {
-        focusEnabled = document.getElementById('focusToggle').checked;
-
-        if (focusEnabled) {
-            document.getElementById('manualInput').focus();
-        }
-    }
-
-   
-
-    function finalizeExcel() {
-        let table = document.getElementById("dataTable");
-        let rows = Array.from(table.rows);
-        let header = rows.shift();
-        let bodyRows = rows.sort((a, b) => {
-            let nameA = a.cells[1].textContent.toLowerCase();
-            let nameB = b.cells[1].textContent.toLowerCase();
-            return nameA.localeCompare(nameB);
-        });
-
-        table.innerHTML = "";
-        table.appendChild(header);
-        bodyRows.forEach(row => table.appendChild(row));
-
-        let tempTable = table.cloneNode(true);
-
-        let tableRows = tempTable.querySelectorAll("tr");
-        tableRows.forEach((row, index) => {
-            if (index > 0) {
-                if (row.cells[3].textContent.trim() === "") {
-                    row.cells[3].textContent = "NVT";
-                }
-                if (row.cells[4].textContent.trim() === "" && row.cells[3].textContent !== "NVT") {
-                    row.cells[4].textContent = "NVT";
+            function cleanBarcode(barcode) {
+                if (barcode.length >= 8) {
+                    barcode = barcode.substring(barcode.length - 2 - 6, barcode.length - 2);
+                    return "s" + barcode + "@ap.be";
+                } else {
+                    return barcode;
                 }
             }
-        });
-        return tempTable;
-    }
 
-    function exportToExcel() {
-        let exportTable = finalizeExcel();
-        insertInfoRow(exportTable, `Examen: ${examName}`, exportTable.rows[0].cells.length);
-        insertInfoRow(exportTable, `Aantal gescande studenten IN: ${document.getElementById('scanCounter').textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
-		insertInfoRow(exportTable, `Aantal gescande studenten OUT: ${document.getElementById('outCounter').textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
-        insertInfoRow(exportTable, `Lokaal: ${document.getElementById('examLocationInput').value}`, exportTable.rows[0].cells.length);
+            function toggleScanMode() {
+                scanMode = document.getElementById("scanModeSwitch").checked ? "out" : "in";
+                document.getElementById("scanModeLabel").textContent = scanMode.toUpperCase();
+            }
 
-        let ws = XLSX.utils.table_to_sheet(exportTable);
-        let wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Scans");
-        XLSX.writeFile(wb, `${examName}.xlsx`);
-    }
+            function toggleFocus() {
+                focusEnabled = document.getElementById("focusToggle").checked;
 
-    function exportToPDF() {
-    let exportTable = finalizeExcel();
-    const { jsPDF } = window.jspdf;
-    let doc = new jsPDF();
+                if (focusEnabled) {
+                    document.getElementById("manualInput").focus();
+                }
+            }
 
-    // === Header parameters ===
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
+            function finalizeExcel() {
+                let table = document.getElementById("dataTable");
+                let rows = Array.from(table.rows);
+                let header = rows.shift();
+                let bodyRows = rows.sort((a, b) => {
+                    let nameA = a.cells[1].textContent.toLowerCase();
+                    let nameB = b.cells[1].textContent.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
 
-    let headerLeftX = 10;
-    let headerTopY = 10;
-    let lineHeight = 8;
+                table.innerHTML = "";
+                table.appendChild(header);
+                bodyRows.forEach((row) => table.appendChild(row));
 
-    let examNameText = `Examen: ${examName}`;
-    let examDateText = `Datum: ${formatDateForBE(document.getElementById('examDate').value)}`;
-    let examTimeText = `Uur: ${document.getElementById('examTime').value}`;
-    let examLocationText = `Lokaal: ${document.getElementById('examLocationInput').value}`;
-    let scanInText = `Aantal gescande studenten IN: ${document.getElementById('scanCounter').textContent} / ${totalStudents}`;
-    let scanOutText = `Aantal gescande studenten OUT: ${document.getElementById('outCounter').textContent} / ${totalStudents}`;
+                let tempTable = table.cloneNode(true);
 
-    // === Print header text ===
-    doc.text(examNameText, headerLeftX, headerTopY);
-    doc.text(examDateText, headerLeftX, headerTopY + lineHeight);
-    doc.text(examTimeText, headerLeftX, headerTopY + lineHeight * 2);
-    doc.text(examLocationText, headerLeftX, headerTopY + lineHeight * 3);
-    doc.text(scanInText, headerLeftX, headerTopY + lineHeight * 4);
-    doc.text(scanOutText, headerLeftX, headerTopY + lineHeight * 5);
+                let tableRows = tempTable.querySelectorAll("tr");
+                tableRows.forEach((row, index) => {
+                    if (index > 0) {
+                        if (row.cells[3].textContent.trim() === "") {
+                            row.cells[3].textContent = "NVT";
+                        }
+                        if (row.cells[4].textContent.trim() === "" && row.cells[3].textContent !== "NVT") {
+                            row.cells[4].textContent = "NVT";
+                        }
+                    }
+                });
+                return tempTable;
+            }
 
-    // === Optional: Draw a box around the header ===
-    let headerHeight = lineHeight * 6 + 5;
-    doc.rect(headerLeftX - 5, headerTopY - 5, 190, headerHeight, 'S');
+            function exportToExcel() {
+                let exportTable = finalizeExcel();
+                insertInfoRow(exportTable, `Examen: ${examName}`, exportTable.rows[0].cells.length);
+                insertInfoRow(exportTable, `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
+                insertInfoRow(exportTable, `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
+                insertInfoRow(exportTable, `Lokaal: ${document.getElementById("examLocationInput").value}`, exportTable.rows[0].cells.length);
 
-    // === Prepare for the table ===
-    let yPos = headerTopY + headerHeight + 5;
+                let ws = XLSX.utils.table_to_sheet(exportTable);
+                let wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Scans");
+                XLSX.writeFile(wb, `${examName}.xlsx`);
+            }
 
-    // === Prepare table data ===
-    let rows = Array.from(exportTable.rows);
-    let header = rows.shift();
-    let head = Array.from(header.cells).map(cell => cell.textContent);
-    let body = rows.map(row => Array.from(row.cells).map(cell => cell.textContent));
+            function exportToPDF() {
+                let exportTable = finalizeExcel();
+                const { jsPDF } = window.jspdf;
+                let doc = new jsPDF();
 
-    // === Draw table ===
-    doc.autoTable({
-        startY: yPos,
-        head: [head],
-        body: body,
-        styles: { fontSize: 10 },
-        headStyles: { fillColor: [227, 6, 19] },
-        columnStyles: {
-            3: { halign: 'center', cellWidth: 25 }, // Scanned In
-            4: { halign: 'center', cellWidth: 25 }  // Scanned Out
-        },
-        margin: { top: 20 },
-        // === Page numbers RIGHT aligned ===
-        didDrawPage: function (data) {
-            let pageCount = doc.internal.getNumberOfPages();
-            let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+                // === Header parameters ===
+                doc.setFontSize(14);
+                doc.setTextColor(0, 0, 0);
 
-            let pageText = `Pagina ${pageCurrent} van ${pageCount}`;
-            let pageWidth = doc.internal.pageSize.getWidth();
-            let textWidth = doc.getTextWidth(pageText);
+                let headerLeftX = 10;
+                let headerTopY = 10;
+                let lineHeight = 8;
 
-            doc.setFontSize(10);
-            doc.text(pageText, pageWidth - textWidth - 10, doc.internal.pageSize.height - 10);
-        }
-    });
+                let examNameText = `Examen: ${examName}`;
+                let examDateText = `Datum: ${formatDateForBE(document.getElementById("examDate").value)}`;
+                let examTimeText = `Uur: ${document.getElementById("examTime").value}`;
+                let examLocationText = `Lokaal: ${document.getElementById("examLocationInput").value}`;
+                let scanInText = `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent} / ${totalStudents}`;
+                let scanOutText = `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent} / ${totalStudents}`;
 
-    // === Save PDF ===
-    doc.save(`${examName}.pdf`);
-}
+                // === Print header text ===
+                doc.text(examNameText, headerLeftX, headerTopY);
+                doc.text(examDateText, headerLeftX, headerTopY + lineHeight);
+                doc.text(examTimeText, headerLeftX, headerTopY + lineHeight * 2);
+                doc.text(examLocationText, headerLeftX, headerTopY + lineHeight * 3);
+                doc.text(scanInText, headerLeftX, headerTopY + lineHeight * 4);
+                doc.text(scanOutText, headerLeftX, headerTopY + lineHeight * 5);
 
+                // === Optional: Draw a box around the header ===
+                let headerHeight = lineHeight * 6 + 5;
+                doc.rect(headerLeftX - 5, headerTopY - 5, 190, headerHeight, "S");
 
+                // === Prepare for the table ===
+                let yPos = headerTopY + headerHeight + 5;
 
-    function insertInfoRow(table, text, colspan) {
-        let row = document.createElement("tr");
-        let cell = document.createElement("td");
-        cell.colSpan = colspan;
-        cell.textContent = text;
-        cell.style.fontWeight = "bold";
-        row.appendChild(cell);
-        table.insertBefore(row, table.firstChild);
-    }
-	
-	document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-        document.getElementById('manualInput').focus();
-    }
-});
+                // === Prepare table data ===
+                let rows = Array.from(exportTable.rows);
+                let header = rows.shift();
+                let head = Array.from(header.cells).map((cell) => cell.textContent);
+                let body = rows.map((row) => Array.from(row.cells).map((cell) => cell.textContent));
 
-function formatDateForBE(isoDateStr) {
-    if (!isoDateStr) return "";
-    let parts = isoDateStr.split("-");
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-}
+                // === Draw table ===
+                doc.autoTable({
+                    startY: yPos,
+                    head: [head],
+                    body: body,
+                    styles: { fontSize: 10 },
+                    headStyles: { fillColor: [227, 6, 19] },
+                    columnStyles: {
+                        3: { halign: "center", cellWidth: 25 }, // Scanned In
+                        4: { halign: "center", cellWidth: 25 }, // Scanned Out
+                    },
+                    margin: { top: 20 },
+                    // === Page numbers RIGHT aligned ===
+                    didDrawPage: function (data) {
+                        let pageCount = doc.internal.getNumberOfPages();
+                        let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
 
+                        let pageText = `Pagina ${pageCurrent} van ${pageCount}`;
+                        let pageWidth = doc.internal.pageSize.getWidth();
+                        let textWidth = doc.getTextWidth(pageText);
 
-</script>
+                        doc.setFontSize(10);
+                        doc.text(pageText, pageWidth - textWidth - 10, doc.internal.pageSize.height - 10);
+                    },
+                });
 
+                // === Save PDF ===
+                doc.save(`${examName}.pdf`);
+            }
 
+            function insertInfoRow(table, text, colspan) {
+                let row = document.createElement("tr");
+                let cell = document.createElement("td");
+                cell.colSpan = colspan;
+                cell.textContent = text;
+                cell.style.fontWeight = "bold";
+                row.appendChild(cell);
+                table.insertBefore(row, table.firstChild);
+            }
 
-</body>
+            document.getElementById("examInput").addEventListener("input", function () {
+                sessionStorage.setItem("examName", this.value);
+            });
 
+            document.getElementById("examDate").addEventListener("input", function () {
+                sessionStorage.setItem("examDate", this.value);
+            });
+
+            document.getElementById("examTime").addEventListener("input", function () {
+                sessionStorage.setItem("examTime", this.value);
+            });
+
+            document.getElementById("examLocationInput").addEventListener("input", function () {
+                sessionStorage.setItem("examLocation", this.value);
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                    document.getElementById("manualInput").focus();
+                }
+            });
+
+            function formatDateForBE(isoDateStr) {
+                if (!isoDateStr) return "";
+                let parts = isoDateStr.split("-");
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            function updateExamName() {
+                examName = document.getElementById("examInput").value;
+                sessionStorage.setItem("examName", examName);
+            }
+
+            window.addEventListener("DOMContentLoaded", function () {
+                // === Veldwaarden terugzetten ===
+                if (sessionStorage.getItem("examName")) {
+                    document.getElementById("examInput").value = sessionStorage.getItem("examName");
+                    examName = document.getElementById("examInput").value;
+                }
+                if (sessionStorage.getItem("examDate")) {
+                    document.getElementById("examDate").value = sessionStorage.getItem("examDate");
+                }
+                if (sessionStorage.getItem("examTime")) {
+                    document.getElementById("examTime").value = sessionStorage.getItem("examTime");
+                }
+                if (sessionStorage.getItem("examLocation")) {
+                    document.getElementById("examLocationInput").value = sessionStorage.getItem("examLocation");
+                }
+
+                // === Tabel terugzetten uit sessionStorage ===
+                if (sessionStorage.getItem("excelData")) {
+                    excelData = JSON.parse(sessionStorage.getItem("excelData"));
+
+                    let table = document.getElementById("dataTable");
+                    table.innerHTML = "";
+
+                    excelData.forEach((rowData, rowIndex) => {
+                        const tr = document.createElement("tr");
+
+                        rowData.forEach((cellText, colIndex) => {
+                            const cellTag = rowIndex === 0 ? "th" : "td";
+                            const cell = document.createElement(cellTag);
+                            cell.textContent = cellText;
+                            tr.appendChild(cell);
+                        });
+
+                        // === Kleuren ENKEL voor datarijen (niet header) ===
+                        if (rowIndex > 0) {
+                            tr.classList.remove("match", "no-match", "row-in", "row-out");
+
+                            const scannedIn = rowData[3];
+                            const scannedOut = rowData[4];
+
+                            if (scannedIn && scannedIn.trim() !== "" && scannedIn.trim() !== "NVT") {
+                                tr.classList.add("row-in");
+                            }
+
+                            if (scannedOut && scannedOut.trim() !== "" && scannedOut.trim() !== "NVT") {
+                                tr.classList.remove("row-in");
+                                tr.classList.add("row-out");
+                            }
+                        }
+
+                        table.appendChild(tr);
+                    });
+
+                    // Update counters & enable export buttons
+                    totalStudents = excelData.length - 1;
+                    document.getElementById("totalStudents").textContent = `Aantal studenten in lijst: ${totalStudents}`;
+                    document.getElementById("scanTotal").textContent = totalStudents;
+                    document.getElementById("scanTotalOut").textContent = totalStudents;
+
+                    updateInOutCounters();
+                    document.getElementById("exportExcelBtn").disabled = false;
+                    document.getElementById("exportPdfBtn").disabled = false;
+                }
+            });
+        </script>
+    </body>
 </html>
