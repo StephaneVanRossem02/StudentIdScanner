@@ -361,7 +361,6 @@
                     if (idCell && idCell.textContent === IDtoCheck) {
                         // === Reset alle mogelijke klassen eerst ===
                         let rowIndex = excelData.findIndex((dataRow) => dataRow[2] === IDtoCheck);
-                        row.classList.remove("match", "no-match", "row-in", "row-out");
 
                         firstName = row.cells[0].textContent;
                         lastName = row.cells[1].textContent;
@@ -370,6 +369,8 @@
                             if (row.cells[3].textContent.trim() === "" || row.cells[3].textContent === "NVT") {
                                 row.cells[3].textContent = getCurrentTimeString();
                                 row.cells[4].textContent = ""; // reset Out
+
+                                row.classList.remove("match", "no-match", "row-in", "row-out");
 
                                 // === Geef GEEL bij IN ===
                                 row.classList.add("row-in");
@@ -383,6 +384,8 @@
                             if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent !== "NVT") {
                                 if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
                                     row.cells[4].textContent = getCurrentTimeString();
+
+                                    row.classList.remove("match", "no-match", "row-in", "row-out");
 
                                     // === Geef GROEN bij OUT ===
                                     row.classList.add("row-out");
@@ -409,8 +412,14 @@
                     document.getElementById("scanStatus").innerHTML = `<span class='error'>${IDtoCheck} staat niet in de lijst</span>`;
                 }
 
-                updateInOutCounters();
-                sessionStorage.setItem("excelData", JSON.stringify(excelData));
+                if (matchFound) {
+                    document.getElementById("scanStatus").innerHTML = `<span class='success'>[${scanMode.toUpperCase()}] Gescanned: ${firstName} ${lastName} (${IDtoCheck})</span>`;
+
+                    updateInOutCounters();
+                    sortExcelDataForDisplay();
+                    rebuildTable();
+                    sessionStorage.setItem("excelData", JSON.stringify(excelData));
+                }
             }
 
             function updateInOutCounters() {
@@ -475,38 +484,38 @@
                 }
             }
 
-            function finalizeExcel() {
-                let table = document.getElementById("dataTable");
-                let rows = Array.from(table.rows);
-                let header = rows.shift();
-                let bodyRows = rows.sort((a, b) => {
-                    let nameA = a.cells[1].textContent.toLowerCase();
-                    let nameB = b.cells[1].textContent.toLowerCase();
-                    return nameA.localeCompare(nameB);
-                });
+            function finalizeExcel(dataToExport) {
+                let table = document.createElement("table");
 
-                table.innerHTML = "";
-                table.appendChild(header);
-                bodyRows.forEach((row) => table.appendChild(row));
+                dataToExport.forEach((rowData, rowIndex) => {
+                    const tr = document.createElement("tr");
 
-                let tempTable = table.cloneNode(true);
+                    rowData.forEach((cellText) => {
+                        const cellTag = rowIndex === 0 ? "th" : "td";
+                        const cell = document.createElement(cellTag);
+                        cell.textContent = cellText;
+                        tr.appendChild(cell);
+                    });
 
-                let tableRows = tempTable.querySelectorAll("tr");
-                tableRows.forEach((row, index) => {
-                    if (index > 0) {
-                        if (row.cells[3].textContent.trim() === "") {
-                            row.cells[3].textContent = "NVT";
+                    if (rowIndex > 0) {
+                        if (tr.cells[3].textContent.trim() === "") {
+                            tr.cells[3].textContent = "NVT";
                         }
-                        if (row.cells[4].textContent.trim() === "" && row.cells[3].textContent !== "NVT") {
-                            row.cells[4].textContent = "NVT";
+                        if (tr.cells[4].textContent.trim() === "" && tr.cells[3].textContent !== "NVT") {
+                            tr.cells[4].textContent = "NVT";
                         }
                     }
+
+                    table.appendChild(tr);
                 });
-                return tempTable;
+
+                return table;
             }
 
             function exportToExcel() {
-                let exportTable = finalizeExcel();
+                const sortedExcelData = getSortedExcelDataCopy();
+                const exportTable = finalizeExcel(sortedExcelData);
+
                 insertInfoRow(exportTable, `Examen: ${examName}`, exportTable.rows[0].cells.length);
                 insertInfoRow(exportTable, `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
                 insertInfoRow(exportTable, `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
@@ -519,11 +528,11 @@
             }
 
             function exportToPDF() {
-                let exportTable = finalizeExcel();
+                const sortedExcelData = getSortedExcelDataCopy();
+                const exportTable = finalizeExcel(sortedExcelData);
                 const { jsPDF } = window.jspdf;
                 let doc = new jsPDF();
 
-                // === Header parameters ===
                 doc.setFontSize(14);
                 doc.setTextColor(0, 0, 0);
 
@@ -538,7 +547,6 @@
                 let scanInText = `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent} / ${totalStudents}`;
                 let scanOutText = `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent} / ${totalStudents}`;
 
-                // === Print header text ===
                 doc.text(examNameText, headerLeftX, headerTopY);
                 doc.text(examDateText, headerLeftX, headerTopY + lineHeight);
                 doc.text(examTimeText, headerLeftX, headerTopY + lineHeight * 2);
@@ -546,20 +554,16 @@
                 doc.text(scanInText, headerLeftX, headerTopY + lineHeight * 4);
                 doc.text(scanOutText, headerLeftX, headerTopY + lineHeight * 5);
 
-                // === Optional: Draw a box around the header ===
                 let headerHeight = lineHeight * 6 + 5;
                 doc.rect(headerLeftX - 5, headerTopY - 5, 190, headerHeight, "S");
 
-                // === Prepare for the table ===
                 let yPos = headerTopY + headerHeight + 5;
 
-                // === Prepare table data ===
                 let rows = Array.from(exportTable.rows);
                 let header = rows.shift();
                 let head = Array.from(header.cells).map((cell) => cell.textContent);
                 let body = rows.map((row) => Array.from(row.cells).map((cell) => cell.textContent));
 
-                // === Draw table ===
                 doc.autoTable({
                     startY: yPos,
                     head: [head],
@@ -567,11 +571,10 @@
                     styles: { fontSize: 10 },
                     headStyles: { fillColor: [227, 6, 19] },
                     columnStyles: {
-                        3: { halign: "center", cellWidth: 25 }, // Scanned In
-                        4: { halign: "center", cellWidth: 25 }, // Scanned Out
+                        3: { halign: "center", cellWidth: 25 },
+                        4: { halign: "center", cellWidth: 25 },
                     },
                     margin: { top: 20 },
-                    // === Page numbers RIGHT aligned ===
                     didDrawPage: function (data) {
                         let pageCount = doc.internal.getNumberOfPages();
                         let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
@@ -585,7 +588,6 @@
                     },
                 });
 
-                // === Save PDF ===
                 doc.save(`${examName}.pdf`);
             }
 
@@ -630,6 +632,95 @@
             function updateExamName() {
                 examName = document.getElementById("examInput").value;
                 sessionStorage.setItem("examName", examName);
+            }
+
+            function getSortedExcelDataCopy() {
+                const header = excelData[0];
+                const dataRows = excelData.slice(1);
+
+                dataRows.sort((a, b) => {
+                    let scoreA = 2;
+                    if (a[4] && a[4].trim() !== "" && a[4].trim() !== "NVT") {
+                        scoreA = 0;
+                    } else if (a[3] && a[3].trim() !== "" && a[3].trim() !== "NVT") {
+                        scoreA = 1;
+                    }
+
+                    let scoreB = 2;
+                    if (b[4] && b[4].trim() !== "" && b[4].trim() !== "NVT") {
+                        scoreB = 0;
+                    } else if (b[3] && b[3].trim() !== "" && b[3].trim() !== "NVT") {
+                        scoreB = 1;
+                    }
+
+                    return scoreA - scoreB;
+                });
+
+                return [header, ...dataRows];
+            }
+
+            function sortExcelDataForDisplay() {
+                // Sorteer niet de header
+                const header = excelData[0];
+                const dataRows = excelData.slice(1);
+
+                dataRows.sort((a, b) => {
+                    let scoreA = 2;
+                    if (a[4] && a[4].trim() !== "" && a[4].trim() !== "NVT") {
+                        scoreA = 0;
+                    } else if (a[3] && a[3].trim() !== "" && a[3].trim() !== "NVT") {
+                        scoreA = 1;
+                    }
+
+                    let scoreB = 2;
+                    if (b[4] && b[4].trim() !== "" && b[4].trim() !== "NVT") {
+                        scoreB = 0;
+                    } else if (b[3] && b[3].trim() !== "" && b[3].trim() !== "NVT") {
+                        scoreB = 1;
+                    }
+
+                    return scoreA - scoreB;
+                });
+
+                // Zet de header + gesorteerde rijen terug samen
+                excelData = [header, ...dataRows];
+            }
+
+            function rebuildTable() {
+                let table = document.getElementById("dataTable");
+                table.innerHTML = "";
+
+                excelData.forEach((rowData, rowIndex) => {
+                    const tr = document.createElement("tr");
+
+                    rowData.forEach((cellText, colIndex) => {
+                        const cellTag = rowIndex === 0 ? "th" : "td";
+                        const cell = document.createElement(cellTag);
+                        cell.textContent = cellText;
+                        tr.appendChild(cell);
+                    });
+
+                    if (rowIndex > 0) {
+                        tr.classList.remove("match", "no-match", "row-in", "row-out");
+
+                        const scannedIn = rowData[3];
+                        const scannedOut = rowData[4];
+
+                        if (scannedIn && scannedIn.trim() !== "" && scannedIn.trim() !== "NVT") {
+                            tr.classList.add("row-in");
+                        }
+
+                        if (scannedOut && scannedOut.trim() !== "" && scannedOut.trim() !== "NVT") {
+                            tr.classList.remove("row-in");
+                            tr.classList.add("row-out");
+                        }
+                    }
+
+                    table.appendChild(tr);
+                });
+
+                updateInOutCounters();
+                sessionStorage.setItem("excelData", JSON.stringify(excelData));
             }
 
             window.addEventListener("DOMContentLoaded", function () {
