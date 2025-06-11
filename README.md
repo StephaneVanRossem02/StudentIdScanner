@@ -38,8 +38,18 @@ Deze tool is bedoeld voor het scannen van studentennummers bij examens, met onde
 
 ### 📤 Exporteren
 
-- **Export naar PDF** met header (examennaam, datum, uur, lokaal, aantal gescande IN/OUT) en paginanummers.
-- **Export naar Excel** met volledige scaninformatie.
+- **Export naar PDF** met header (examennaam, datum, uur, lokaal, aantal gescande IN/OUT) en paginanummers.  
+→ De PDF wordt **gesorteerd op scanstatus** (OUT bovenaan, dan IN, dan niet-gescand).  
+→ De tabel op het scherm blijft ongewijzigd.
+
+- **Export naar Excel** met volledige scaninformatie.  
+→ Ook hier wordt een **gesorteerde kopie van de data geëxporteerd**, zonder de UI te beïnvloeden.
+
+### Technische details → Sortering bij export
+
+Bij het exporteren wordt een **gesorteerde kopie van de data** gebruikt, zodat de weergegeven tabel op het scherm niet beïnvloed wordt.  
+→ Dit voorkomt het noodzaak om te refreshen na export.
+
 
 ---
 
@@ -121,13 +131,6 @@ Exporteren naar PDF en Excel is voorzien.
 
 ---
 
-## Toekomstige verbeteringen
-
-- Permanente opslag (localStorage)
-- Logging van scans
-- Meertalige ondersteuning
-
----
 
 ## Licentie
 
