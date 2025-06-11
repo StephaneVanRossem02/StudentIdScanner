@@ -187,6 +187,13 @@
 	  border-radius: 50%;
 	}
 
+    .row-in {
+     background-color: #fff7cc !important; /* GEEL */
+    }
+
+.row-out {
+    background-color: #dff6e0 !important; /* GROEN */
+}
     </style>
 </head>
 
@@ -335,66 +342,74 @@
         });
     }
 
-    function checkBarcode(IDtoCheck) {
-        let matchFound = false;
-        let table = document.getElementById("dataTable");
-        let rows = Array.from(table.rows).slice(1);
-        let firstName, lastName;
+   function checkBarcode(IDtoCheck) {
+    let matchFound = false;
+    let table = document.getElementById("dataTable");
+    let rows = Array.from(table.rows).slice(1);
+    let firstName, lastName;
 
-        for (let row of rows) {
-            let idCell = row.cells[2];
-            if (idCell && idCell.textContent === IDtoCheck) {
-                row.classList.add("match");
-                row.classList.remove("no-match");
+    for (let row of rows) {
+        let idCell = row.cells[2];
+        if (idCell && idCell.textContent === IDtoCheck) {
 
-                firstName = row.cells[0].textContent;
-                lastName = row.cells[1].textContent;
+            // === Reset alle mogelijke klassen eerst ===
+            row.classList.remove("match", "no-match", "row-in", "row-out");
 
-                if (scanMode === 'in') {
-                    if (row.cells[3].textContent.trim() === "" || row.cells[3].textContent === "NVT") {
-                        row.cells[3].textContent = getCurrentTimeString();
-                        row.cells[4].textContent = ""; // reset Out
-                        row.classList.add("row-in");
-                        row.classList.remove("row-out");
-                    } else {
-                        document.getElementById("scanStatus").innerHTML =
-                            `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
-                        return;
-                    }
-                } else if (scanMode === 'out') {
-                    if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent !== "NVT") {
-                        if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
-                            row.cells[4].textContent = getCurrentTimeString();
-                            row.classList.add("row-out");
-                            row.classList.remove("row-in");
-                        } else {
-                            document.getElementById("scanStatus").innerHTML =
-                                `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al OUT gescand → dubbele OUT niet toegestaan</span>`;
-                            return;
-                        }
-                    } else {
-                        document.getElementById("scanStatus").innerHTML =
-                            `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) heeft nog geen IN-scan → OUT niet toegestaan</span>`;
-                        return;
-                    }
+            firstName = row.cells[0].textContent;
+            lastName = row.cells[1].textContent;
+
+            if (scanMode === 'in') {
+                if (row.cells[3].textContent.trim() === "" || row.cells[3].textContent === "NVT") {
+                    row.cells[3].textContent = getCurrentTimeString();
+                    row.cells[4].textContent = ""; // reset Out
+
+                    // === Geef GEEL bij IN ===
+                    row.classList.add("row-in");
+
+                } else {
+                    document.getElementById("scanStatus").innerHTML =
+                        `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
+                    return;
                 }
+            } else if (scanMode === 'out') {
+                if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent !== "NVT") {
+                    if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
+                        row.cells[4].textContent = getCurrentTimeString();
 
-                matchFound = true;
-                table.insertBefore(row, table.rows[1]);
-                break;
+                        // === Geef GROEN bij OUT ===
+                        row.classList.add("row-out");
+
+                    } else {
+                        document.getElementById("scanStatus").innerHTML =
+                            `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al OUT gescand → dubbele OUT niet toegestaan</span>`;
+                        return;
+                    }
+                } else {
+                    document.getElementById("scanStatus").innerHTML =
+                        `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) heeft nog geen IN-scan → OUT niet toegestaan</span>`;
+                    return;
+                }
             }
-        }
 
-        if (matchFound) {
-            document.getElementById("scanStatus").innerHTML =
-                `<span class='success'>[${scanMode.toUpperCase()}] Gescanned: ${firstName} ${lastName} (${IDtoCheck})</span>`;
-        } else {
-            document.getElementById("scanStatus").innerHTML =
-                `<span class='error'>${IDtoCheck} staat niet in de lijst</span>`;
+            matchFound = true;
+            table.insertBefore(row, table.rows[1]); // verplaats naar boven
+            break;
         }
-
-        updateInOutCounters();
     }
+
+    // === Toon status bovenaan ===
+    if (matchFound) {
+        document.getElementById("scanStatus").innerHTML =
+            `<span class='success'>[${scanMode.toUpperCase()}] Gescanned: ${firstName} ${lastName} (${IDtoCheck})</span>`;
+    } else {
+        document.getElementById("scanStatus").innerHTML =
+            `<span class='error'>${IDtoCheck} staat niet in de lijst</span>`;
+        // Geen rij kleuren bij fout → geen row.classList.add()
+    }
+
+    updateInOutCounters();
+}
+
 
     function updateInOutCounters() {
     let table = document.getElementById("dataTable");
@@ -519,7 +534,7 @@
     let lineHeight = 8;
 
     let examNameText = `Examen: ${examName}`;
-    let examDateText = `Datum: ${document.getElementById('examDate').value}`;
+    let examDateText = `Datum: ${formatDateForBE(document.getElementById('examDate').value)}`;
     let examTimeText = `Uur: ${document.getElementById('examTime').value}`;
     let examLocationText = `Lokaal: ${document.getElementById('examLocationInput').value}`;
     let scanInText = `Aantal gescande studenten IN: ${document.getElementById('scanCounter').textContent} / ${totalStudents}`;
@@ -558,18 +573,24 @@
             4: { halign: 'center', cellWidth: 25 }  // Scanned Out
         },
         margin: { top: 20 },
-        // === Page numbers ===
+        // === Page numbers RIGHT aligned ===
         didDrawPage: function (data) {
             let pageCount = doc.internal.getNumberOfPages();
             let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+            let pageText = `Pagina ${pageCurrent} van ${pageCount}`;
+            let pageWidth = doc.internal.pageSize.getWidth();
+            let textWidth = doc.getTextWidth(pageText);
+
             doc.setFontSize(10);
-            doc.text(`Pagina ${pageCurrent} van ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+            doc.text(pageText, pageWidth - textWidth - 10, doc.internal.pageSize.height - 10);
         }
     });
 
     // === Save PDF ===
     doc.save(`${examName}.pdf`);
 }
+
 
 
     function insertInfoRow(table, text, colspan) {
@@ -587,6 +608,13 @@
         document.getElementById('manualInput').focus();
     }
 });
+
+function formatDateForBE(isoDateStr) {
+    if (!isoDateStr) return "";
+    let parts = isoDateStr.split("-");
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
 
 </script>
 
