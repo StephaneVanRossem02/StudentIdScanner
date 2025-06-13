@@ -1,0 +1,188 @@
+body {
+                font-family: "Roboto", Arial, sans-serif;
+                background-color: #f9f9f9;
+                color: #333;
+                margin: 20px;
+            }
+
+            #apLogo {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                width: 200px;
+            }
+
+            h1 {
+                text-align: center;
+                color: #e30613;
+                font-size: 36px;
+                margin-bottom: 20px;
+            }
+
+            input[type="file"],
+            button,
+            input[type="text"],
+            input[type="date"],
+            input[type="time"] {
+                display: block;
+                margin: 10px 0;
+                padding: 12px 16px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                width: 100%;
+                max-width: 500px;
+                box-sizing: border-box;
+            }
+
+            button {
+                background-color: #e30613;
+                color: white;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.3s ease, transform 0.1s ease;
+            }
+
+            button:hover {
+                background-color: #c00510;
+                transform: scale(1.02);
+            }
+
+            button:disabled {
+                background-color: #ddd;
+                color: #999;
+                cursor: not-allowed;
+            }
+
+            .buttonRow {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            .buttonRow button {
+                flex: 1 1 auto;
+                max-width: 200px;
+            }
+
+            #fileName {
+                font-weight: bold;
+                margin-top: 10px;
+            }
+
+            #fileName input[type="text"] {
+                display: inline-block;
+                width: auto;
+                max-width: 300px;
+                margin-left: 10px;
+                font-weight: normal;
+                padding: 4px 8px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                background-color: white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+            }
+
+            th,
+            td {
+                padding: 12px 16px;
+                text-align: left;
+                border-bottom: 1px solid #eee;
+            }
+
+            th {
+                background-color: #e30613;
+                color: white;
+                text-transform: uppercase;
+                font-weight: bold;
+            }
+
+            .match {
+                background-color: #dff6e0 !important;
+            }
+
+            .no-match {
+                background-color: #ffe6e6 !important;
+            }
+
+            .success {
+                color: green;
+                font-weight: bold;
+            }
+
+            .error {
+                color: #e30613;
+                font-weight: bold;
+            }
+
+            .focusCheckbox {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            .switch {
+                position: relative;
+                display: inline-block;
+                width: 60px;
+                height: 34px;
+            }
+
+            .switch input {
+                display: none;
+            }
+
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #ccc;
+                transition: 0.4s;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 26px;
+                width: 26px;
+                left: 4px;
+                bottom: 4px;
+                background-color: white;
+                transition: 0.4s;
+            }
+
+            input:checked + .slider {
+                background-color: #2196f3;
+            }
+
+            input:checked + .slider:before {
+                transform: translateX(26px);
+            }
+
+            .slider.round {
+                border-radius: 34px;
+            }
+
+            .slider.round:before {
+                border-radius: 50%;
+            }
+
+            .row-in {
+                background-color: #fff7cc !important; /* GEEL */
+            }
+
+            .row-out {
+                background-color: #dff6e0 !important; /* GROEN */
+            }
