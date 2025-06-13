@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student ID Scanner</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <img src="assets\logo.jpg" alt="AP Hogeschool Antwerpen" id="apLogo" />
+    <h1>Student ID Scanner</h1>
+
+    <div class="buttonRow">
+        <button id="chooseFileBtn" onclick="document.getElementById('fileInput').click()">Pas bestand kiezen</button>
+        <input type="file" id="fileInput" accept=".xlsx" style="display: none;" tabindex="-1" />
+        <button id="exportExcelBtn" disabled>Exporteer Excel</button>
+        <button id="exportPdfBtn" disabled>Exporteer PDF</button>
+        <label class="switch">
+            <input type="checkbox" id="scanModeSwitch" />
+            <span class="slider round"></span>
+        </label>
+        <span id="scanModeLabel">IN</span>
+    </div>
+
+    <div class="focusCheckbox">
+        <input type="checkbox" id="focusToggle" />
+        <label for="focusToggle">Focus scanveld actief</label>
+    </div>
+
+    <p id="fileName">Examen: <input type="text" id="examInput" /></p>
+    <p id="examMoment">Datum: <input type="date" id="examDate" /></p>
+    <p id="examMomenttime">Uur: <input type="time" id="examTime" /></p>
+    <p id="examLocation">Lokaal: <input type="text" id="examLocationInput" placeholder="bv. Lokaal 123" /></p>
+
+    <p id="totalStudents">Aantal studenten in lijst: 0</p>
+    <p id="loadingSpinner">Bezig met laden...</p>
+    <p id="scanStatus">Nog niets gescand</p>
+    <p>In gescand: <span id="scanCounter">0</span> / <span id="scanTotal">0</span></p>
+    <p>OUT gescand: <span id="outCounter">0</span> / <span id="scanTotalOut">0</span></p>
+
+    <input type="text" id="manualInput" placeholder="Focus hier, scan barcode met scanner" />
+
+    <table id="dataTable"></table>
+
+    <script src="scanner.js"></script>
+</body>
+</html>
