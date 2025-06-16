@@ -112,10 +112,21 @@ function handleManualInput(event) {
     if (event.key === "Enter") {
         let input = event.target.value.trim();
         if (input !== "") {
-            let cleaned = cleanBarcode(input);
-            if (cleaned !== "") {
-                checkBarcode(cleaned);
+            let firstTryID = extractID(input, 2);
+            let secondTryID = extractID(input, 1);
+
+            if (firstTryID) {
+                let email1 = "s" + firstTryID + "@ap.be";
+                checkBarcode(email1);
+
+                if (document.getElementById("scanStatus").innerText.includes("staat niet in de lijst")) {
+                    if (secondTryID) {
+                        let email2 = "s" + secondTryID + "@ap.be";
+                        checkBarcode(email2);
+                    }
+                }
             }
+
             event.target.value = "";
             if (focusEnabled) {
                 event.target.focus();
@@ -123,6 +134,15 @@ function handleManualInput(event) {
         }
     }
 }
+
+function extractID(barcode, offset) {
+    if (barcode.length >= (offset + 6)) {
+        return barcode.substring(barcode.length - offset - 6, barcode.length - offset);
+    }
+    return null;
+}
+
+
 
 function cleanBarcode(barcode) {
     if (barcode.length >= 8) {
@@ -367,6 +387,35 @@ function getSortedExcelDataCopy() {
     });
 
     return [header, ...dataRows];
+}
+
+
+         function handleManualInput(event) {
+    if (event.key === "Enter") {
+        let input = event.target.value.trim();
+        if (input !== "") {
+            let firstTryID = extractID(input, 2);
+            let secondTryID = extractID(input, 1);
+
+            if (firstTryID) {
+                let email1 = "s" + firstTryID + "@ap.be";
+                checkBarcode(email1);
+
+                // Als eerste poging faalt, probeer met offset -1
+                if (document.getElementById("scanStatus").innerText.includes("staat niet in de lijst")) {
+                    if (secondTryID) {
+                        let email2 = "s" + secondTryID + "@ap.be";
+                        checkBarcode(email2);
+                    }
+                }
+            }
+
+            event.target.value = "";
+            if (focusEnabled) {
+                event.target.focus();
+            }
+        }
+    }
 }
 
 
