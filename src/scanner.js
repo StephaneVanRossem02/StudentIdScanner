@@ -329,10 +329,9 @@ function exportToPDF() {
             top: 20
         },
         didDrawPage: function(data) {
-            let pageCount = doc.internal.getNumberOfPages();
             let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
 
-            let pageText = `Pagina ${pageCurrent} van ${pageCount}`;
+            let pageText = `Pagina ${pageCurrent} van {totalPages}`;
             let pageWidth = doc.internal.pageSize.getWidth();
             let textWidth = doc.getTextWidth(pageText);
 
@@ -340,7 +339,9 @@ function exportToPDF() {
             doc.text(pageText, pageWidth - textWidth - 10, doc.internal.pageSize.height - 10);
         },
     });
-
+    if (typeof doc.putTotalPages === 'function') {
+        doc.putTotalPages('{totalPages}');
+    }
     doc.save(`${examName}.pdf`);
 }
 
@@ -375,6 +376,13 @@ window.addEventListener("DOMContentLoaded", function() {
 
     // Init
     document.getElementById("scanStatus").innerHTML = "Nog niets gescand";
+        if (!sessionStorage.getItem("examDate")) {
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
+        document.getElementById("examDate").value = `${year}-${month}-${day}`;
+    }
 
     // File input
     document.getElementById("fileInput").addEventListener("change", function(event) {
