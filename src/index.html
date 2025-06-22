@@ -13,7 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-    <img src="assets\logo.jpg" alt="AP Hogeschool Antwerpen" id="apLogo" />
+    <img src="assets/logo.jpg" alt="AP Hogeschool Antwerpen" id="apLogo" />
     <h1>Student ID Scanner</h1>
 
     <div class="buttonRow">
@@ -28,23 +28,61 @@
         <span id="scanModeLabel">IN</span>
     </div>
 
-    <div class="focusCheckbox">
-        <input type="checkbox" id="focusToggle" />
-        <label for="focusToggle">Focus scanveld actief</label>
+    <!-- Examennaam + Lokaal -->
+    <div class="examRowTop">
+        <p id="fileName">Examen: <input type="text" id="examInput" /></p>
+        <p id="examLocation">Lokaal: <input type="text" id="examLocationInput" placeholder="bv. Lokaal 123" /></p>
     </div>
 
-    <p id="fileName">Examen: <input type="text" id="examInput" /></p>
-    <p id="examMoment">Datum: <input type="date" id="examDate" /></p>
-    <p id="examMomenttime">Uur: <input type="time" id="examTime" /></p>
-    <p id="examLocation">Lokaal: <input type="text" id="examLocationInput" placeholder="bv. Lokaal 123" /></p>
+    <!-- Datum + Uur -->
+    <div class="examRowBottom">
+        <p id="examMoment">Datum: <input type="date" id="examDate" /></p>
+        <p id="examMomenttime">Uur: <input type="time" id="examTime" /></p>
+    </div>
 
-    <p id="totalStudents">Aantal studenten in lijst: 0</p>
-    <p id="loadingSpinner">Bezig met laden...</p>
-    <p id="scanStatus">Nog niets gescand</p>
-    <p>In gescand: <span id="scanCounter">0</span> / <span id="scanTotal">0</span></p>
-    <p>OUT gescand: <span id="outCounter">0</span> / <span id="scanTotalOut">0</span></p>
+    <!-- Counter blokken -->
+    <div class="counterBlock">
+        <div class="counterItem total">
+            <div class="counterLabel">Aantal studenten in lijst</div>
+            <div class="counterValue" id="totalStudents">0</div>
+        </div>
 
-    <input type="text" id="manualInput" placeholder="Focus hier, scan barcode met scanner" />
+        <div class="counterItem in">
+            <div class="counterLabel">IN gescand</div>
+            <div class="counterValue" id="scanCounter">0</div>
+        </div>
+
+        <div class="counterItem out">
+            <div class="counterLabel">OUT gescand</div>
+            <div class="counterValue" id="outCounter">0</div>
+        </div>
+    </div>
+
+    <!-- Scan veld + focus checkbox + zoekveld -->
+   <div class="scanAndSearchBar">
+    <div class="scanGroup">
+        <input type="text" id="manualInput" placeholder="Scan of handmatige invoer..." autocomplete="off" autofocus />
+
+        <label class="focusCheckbox">
+            <input type="checkbox" id="focusToggle" />
+            Focus scanveld actief
+        </label>
+    </div>
+
+    <div>
+        <input type="text" id="searchInput" placeholder="Zoek student..." oninput="filterTable()" />
+    </div>
+</div>
+<label class="nonParticipantCheckbox">
+    <input type="checkbox" id="nonParticipantToggle" />
+    Aftekenen zonder deelname
+</label>
+
+
+
+
+    <!-- Optioneel: scanStatus -->
+    <p id="scanStatus" style="display: none;">Nog niets gescand</p>
 
     <table id="dataTable"></table>
 

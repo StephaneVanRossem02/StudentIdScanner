@@ -72,20 +72,33 @@ function checkBarcode(IDtoCheck) {
             firstName = row.cells[0].textContent;
             lastName = row.cells[1].textContent;
 
-            if (scanMode === "in") {
-                if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
-                    row.cells[4].textContent = getCurrentTimeString();
-                    row.cells[5].textContent = "";
+           if (scanMode === "in") {
+		let nonParticipant = document.getElementById("nonParticipantToggle").checked;
 
-                    row.classList.remove("match", "no-match", "row-in", "row-out");
-                    row.classList.add("row-in");
+		if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
 
-                    excelData[rowIndex][4] = row.cells[4].textContent;
-                    excelData[rowIndex][5] = row.cells[5].textContent;
-                } else {
-                    document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
-                    return;
-                }
+			if (nonParticipant) {
+				row.cells[4].textContent = "Afgetekend zonder deelname";
+				row.cells[5].textContent = "Afgetekend zonder deelname";
+
+				excelData[rowIndex][4] = "Afgetekend zonder deelname";
+				excelData[rowIndex][5] = "Afgetekend zonder deelname";
+			} else {
+				row.cells[4].textContent = getCurrentTimeString();
+				row.cells[5].textContent = "";
+
+				excelData[rowIndex][4] = row.cells[4].textContent;
+				excelData[rowIndex][5] = row.cells[5].textContent;
+			}
+
+			row.classList.remove("match", "no-match", "row-in", "row-out");
+			row.classList.add("row-in");
+
+		} else {
+			document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
+			return;
+		}
+
             } else if (scanMode === "out") {
                 if (row.cells[4].textContent.trim() !== "" && row.cells[4].textContent !== "NVT") {
                     if (row.cells[5].textContent.trim() === "" || row.cells[5].textContent === "NVT") {
@@ -138,11 +151,17 @@ function updateInOutCounters() {
         }
     }
 
-    document.getElementById("scanCounter").textContent = inCount;
-    document.getElementById("outCounter").textContent = outCountTemp;
-    document.getElementById("scanTotal").textContent = totalStudents;
-    document.getElementById("scanTotalOut").textContent = totalStudents;
+    const scanCounterEl = document.getElementById("scanCounter");
+    if (scanCounterEl) {
+        scanCounterEl.textContent = inCount;
+    }
+
+    const outCounterEl = document.getElementById("outCounter");
+    if (outCounterEl) {
+        outCounterEl.textContent = outCountTemp;
+    }
 }
+
 
 function toggleScanMode() {
     scanMode = document.getElementById("scanModeSwitch").checked ? "out" : "in";
@@ -169,14 +188,42 @@ function rebuildTable() {
             if (row[5].trim() === "") {
                 row[5] = "NVT";
             }
+            if (!row[6]) {
+                row[6] = "";
+            }
         }
 
         // Bouw de rij
         let tr = document.createElement("tr");
 
-        row.forEach((cell) => {
+        row.forEach((cell, cellIndex) => {
             let cellElement = document.createElement(index === 0 ? "th" : "td");
-            cellElement.textContent = cell;
+
+            // Voor opmerkingen-kolom → toon als textContent
+         if (cellIndex === 6 && index > 0) {
+    // Opmerkingen tonen als lijst
+			cellElement.innerHTML = cell
+				.split("\n")
+				.map(r => `<div>${r}</div>`)
+				.join("");
+
+			// Voeg knop toe in aparte div
+			let buttonDiv = document.createElement("div");
+			buttonDiv.style.marginTop = "5px";
+
+			let button = document.createElement("button");
+			button.textContent = "📝 Opmerking";
+			button.onclick = function () {
+				addRemark(row[2]); // studentnummer
+			};
+			buttonDiv.appendChild(button);
+
+			cellElement.appendChild(buttonDiv);
+		} else {
+			// Voor andere kolommen → normale tekst
+			cellElement.textContent = cell;
+		}
+
             tr.appendChild(cellElement);
         });
 
@@ -195,14 +242,26 @@ function rebuildTable() {
                 tr.classList.remove("row-in");
                 tr.classList.add("row-out");
             }
+			if (row[7] === "Afgetekend zonder deelname") {
+				tr.classList.add("row-nonparticipant");
+			}
         }
 
         table.appendChild(tr);
     });
+	const scanStatusEl = document.getElementById("scanStatus");
+	if (scanStatusEl) {
+		scanStatusEl.innerHTML = "Nog niets gescand";
+	}
+	
+	let totalStudents = excelData.length - 1;
+	document.getElementById("totalStudents").textContent = totalStudents;
 
     updateInOutCounters();
     sessionStorage.setItem("excelData", JSON.stringify(excelData));
 }
+
+
 
 
 function insertInfoRow(table, text, colspan = 2) {
@@ -244,41 +303,34 @@ function finalizeExcel() {
     const time = document.getElementById("examTime").value;
     const location = document.getElementById("examLocationInput").value;
 
+    const headerRow = [`Examen: ${examName}`, "", "", "", "", "", ""];
     const infoRow = ["Datum:", date, "Uur:", time, "Locatie:", location, "", ""];
-    const spaceRow = ["", "", "", "", "", ""];
 
-    return [sortedData[0], infoRow, spaceRow, ...sortedData.slice(1)];
+    const emptyRow = ["", "", "", "", "", "", ""];
+
+    return [headerRow, infoRow, emptyRow, sortedData[0], ...sortedData.slice(1)];
 }
 
+
 function exportToExcel() {
-    let exportTable = document.getElementById("dataTable").cloneNode(true);
+    const exportData = finalizeExcel();
 
-    // === Formatteer datum ===
-    const dateValue = document.getElementById("examDate").value;
-    const dateObj = new Date(dateValue);
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const year = dateObj.getFullYear();
-    const examDateFormatted = `${day}/${month}/${year}`;
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Scan resultaten");
 
-    // === Voeg info rows toe ===
-    insertInfoRow(exportTable, `Examen: ${examName}`, exportTable.rows[0].cells.length);
-    insertInfoRow(exportTable, `Datum: ${examDateFormatted}`);
-    insertInfoRow(exportTable, `Uur: ${document.getElementById("examTime").value}`);
-    insertInfoRow(exportTable, `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent}`);
-    insertInfoRow(exportTable, `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent}`);
-    insertInfoRow(exportTable, `Lokaal: ${document.getElementById("examLocationInput").value}`);
-
-    // === Maak Excel bestand ===
-    let wb = XLSX.utils.table_to_book(exportTable);
     XLSX.writeFile(wb, `${examName}.xlsx`);
 }
 
 
 
- function exportToPDF() {
+
+
+
+
+function exportToPDF() {
     const sortedData = getSortedExcelDataCopy();
-    const doc = new jspdf.jsPDF();
+    const doc = new jspdf.jsPDF(); // standaard portrait A4
 
     const columns = sortedData[0];
     const rows = sortedData.slice(1);
@@ -286,7 +338,7 @@ function exportToExcel() {
     const head = columns;
     const body = rows;
 
-    // === Formatteer datum als DD/MM/YYYY ===
+    // Datum als DD/MM/YYYY
     const dateValue = document.getElementById("examDate").value;
     const dateObj = new Date(dateValue);
     const day = String(dateObj.getDate()).padStart(2, '0');
@@ -294,7 +346,7 @@ function exportToExcel() {
     const year = dateObj.getFullYear();
     const examDateFormatted = `${day}/${month}/${year}`;
 
-    // === Header info ===
+    // Header info
     let examNameText = `Examen: ${examName}`;
     let examDateText = `Datum: ${examDateFormatted}`;
     let examTimeText = `Uur: ${document.getElementById("examTime").value}`;
@@ -306,7 +358,7 @@ function exportToExcel() {
     let headerTopY = 20;
     let lineHeight = 7;
 
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.text(examNameText, headerLeftX, headerTopY);
     doc.text(examDateText, headerLeftX, headerTopY + lineHeight);
     doc.text(examTimeText, headerLeftX, headerTopY + lineHeight * 2);
@@ -319,17 +371,25 @@ function exportToExcel() {
 
     let yPos = headerTopY + headerHeight + 5;
 
-    // === AutoTable ===
+    // AutoTable
     doc.autoTable({
         startY: yPos,
         head: [head],
         body: body,
-        styles: { fontSize: 10 },
+        styles: { fontSize: 9 },
         headStyles: { fillColor: [227, 6, 19] },
+        theme: 'grid',
+        tableWidth: 'auto', // AUTOMATISCH aanpassen
         columnStyles: {
-            3: { halign: "center", cellWidth: 25 },
-            4: { halign: "center", cellWidth: 25 },
+            0: { cellWidth: 'auto' },  // Voornaam
+            1: { cellWidth: 'auto' },  // Achternaam
+            2: { cellWidth: 'auto' },  // Pointer
+            3: { cellWidth: 'auto' },  // Subgroep
+            4: { halign: "center", cellWidth: 'auto' },  // IN
+            5: { halign: "center", cellWidth: 'auto' },  // OUT
+            6: { cellWidth: 'auto' },  // Opmerkingen
         },
+
         didDrawPage: function (data) {
             let pageCount = doc.internal.getNumberOfPages();
             let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
@@ -338,7 +398,7 @@ function exportToExcel() {
             let pageWidth = doc.internal.pageSize.getWidth();
             let textWidth = doc.getTextWidth(pageText);
 
-            doc.setFontSize(10);
+            doc.setFontSize(9);
             doc.text(pageText, pageWidth - textWidth - 10, doc.internal.pageSize.height - 10);
         },
     });
@@ -347,6 +407,58 @@ function exportToExcel() {
 }
 
 
+
+function addRemark(studentNumber) {
+    let studentIndex = excelData.findIndex(row => row[2] === studentNumber);
+
+    if (studentIndex > 0) {
+        let newRemark = prompt("Voer opmerking in voor student " + studentNumber + ":");
+
+        if (newRemark !== null && newRemark.trim() !== "") {
+            let now = new Date();
+            let time = now.toLocaleTimeString("nl-BE", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
+
+            let existingRemarks = excelData[studentIndex][6] ? excelData[studentIndex][6] : "";
+
+            if (existingRemarks !== "") {
+                existingRemarks += "\n";
+            }
+            existingRemarks += `${time} - ${newRemark.trim()}`;
+
+            excelData[studentIndex][6] = existingRemarks;
+
+            rebuildTable();
+            sessionStorage.setItem("excelData", JSON.stringify(excelData));
+        }
+    } else {
+        console.log("Student niet gevonden!");
+    }
+}
+
+function filterTable() {
+    const input = document.getElementById("searchInput").value.toLowerCase();
+    const rows = document.getElementById("dataTable").getElementsByTagName("tr");
+
+    // Skip header (index 0)
+    for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName("td");
+
+        // Match op voornaam (0), achternaam (1), pointer (2)
+        const firstName = cells[0] ? cells[0].textContent.toLowerCase() : "";
+        const lastName = cells[1] ? cells[1].textContent.toLowerCase() : "";
+        const pointer = cells[2] ? cells[2].textContent.toLowerCase() : "";
+
+        if (firstName.includes(input) || lastName.includes(input) || pointer.includes(input)) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }
+}
 
 
 
@@ -408,12 +520,9 @@ window.addEventListener("DOMContentLoaded", function () {
 
     // === File input voor Excel ===
     document.getElementById("fileInput").addEventListener("change", function (event) {
-        document.getElementById("loadingSpinner").style.display = "block";
 
         scanCount = 0;
         outCount = 0;
-        document.getElementById("scanCounter").textContent = scanCount;
-        document.getElementById("outCounter").textContent = outCount;
 
         let file = event.target.files[0];
         let reader = new FileReader();
@@ -431,7 +540,7 @@ window.addEventListener("DOMContentLoaded", function () {
             const subgroepCol = headerRow.indexOf("Subgroep");
             const vrijstellingCol = headerRow.indexOf("Vrijstelling");
 
-            excelData = [["Voornaam", "Achternaam", "Pointer", "Subgroep", "Scanned In", "Scanned Out"]];
+			excelData = [["Voornaam", "Achternaam", "Pointer", "Subgroep", "Scanned In", "Scanned Out", "Opmerkingen"]];
 
             for (let i = 1; i < rawData.length; i++) {
                 const row = rawData[i];
@@ -448,18 +557,12 @@ window.addEventListener("DOMContentLoaded", function () {
 				const voornaam = nameParts.pop();  // laatste woord = voornaam
 				const achternaam = nameParts.join(" ");  // rest = achternaam
 
-                excelData.push([voornaam, achternaam, pointer, subgroep, "", ""]);
+				excelData.push([voornaam, achternaam, pointer, subgroep, "", "", ""]);
             }
 
             rebuildTable();
 
             totalStudents = excelData.length - 1;
-            document.getElementById("totalStudents").textContent = `Aantal studenten in lijst: ${totalStudents}`;
-            document.getElementById("scanTotal").textContent = totalStudents;
-            document.getElementById("scanTotalOut").textContent = totalStudents;
-
-            document.getElementById("loadingSpinner").style.display = "none";
-
             document.getElementById("exportExcelBtn").disabled = false;
             document.getElementById("exportPdfBtn").disabled = false;
 
@@ -474,6 +577,8 @@ window.addEventListener("DOMContentLoaded", function () {
             } else {
                 examName = file.name;
             }
+			
+			examName = examName.replace(/\.[^/.]+$/, "");
 
             const input = document.getElementById("examInput");
             if (input) {
