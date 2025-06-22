@@ -50,7 +50,6 @@ Deze tool is bedoeld voor het scannen van studentennummers bij examens, met onde
 Bij het exporteren wordt een **gesorteerde kopie van de data** gebruikt, zodat de weergegeven tabel op het scherm niet beïnvloed wordt.  
 → Dit voorkomt het noodzaak om te refreshen na export.
 
-
 ---
 
 ## Gebruik
@@ -90,24 +89,8 @@ Exporteren naar PDF en Excel is voorzien.
 
 ## Werkwijze
 
-1. Ga naar je vak in **toets.ap.be**
-2. Navigeer naar **Cijfers → Rapportage → Exporteer** om je studentenlijst te exporteren
-3. Open de Scanner tool (scanner.html)
-4. Upload je Excelbestand
-5. Vul Examennaam, Datum, Uur en Lokaal in
-6. Start met scannen:
-    - Schakel tussen **IN** en **OUT**
-    - Scan studentnummers met scanner of manueel
-7. Exporteer resultaten naar PDF of Excel indien gewenst
+Lijsten trekken uit Ibamaflex stappenplan moet nog verder worden uitgeschreven.
 
-![alt text](image-2.png)
-
----
-
-## Voorbeeld screenshot
-
-![alt text](image.png)
-![alt text](image-1.png)
 ---
 
 ## Functionaliteiten
@@ -131,7 +114,6 @@ Exporteren naar PDF en Excel is voorzien.
 
 ---
 
-
 ## Licentie
 
 Vrij te gebruiken voor onderwijsdoeleinden.
@@ -139,4 +121,3 @@ Vrij te gebruiken voor onderwijsdoeleinden.
 ---
 
 🎓 **Developed by Stephane Van Rossem, Vincent Van Camp
-
