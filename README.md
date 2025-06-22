@@ -50,7 +50,6 @@ Deze tool is bedoeld voor het scannen van studentennummers bij examens, met onde
 Bij het exporteren wordt een **gesorteerde kopie van de data** gebruikt, zodat de weergegeven tabel op het scherm niet beïnvloed wordt.  
 → Dit voorkomt het noodzaak om te refreshen na export.
 
-
 ---
 
 ## Gebruik
@@ -100,14 +99,15 @@ Exporteren naar PDF en Excel is voorzien.
     - Scan studentnummers met scanner of manueel
 7. Exporteer resultaten naar PDF of Excel indien gewenst
 
-![alt text](image-2.png)
+![alt text](images/image-2.png)
 
 ---
 
 ## Voorbeeld screenshot
 
-![alt text](image.png)
-![alt text](image-1.png)
+![alt text](images/image.png)  
+![alt text](images/image-1.png)
+
 ---
 
 ## Functionaliteiten
@@ -131,7 +131,6 @@ Exporteren naar PDF en Excel is voorzien.
 
 ---
 
-
 ## Licentie
 
 Vrij te gebruiken voor onderwijsdoeleinden.
@@ -139,4 +138,3 @@ Vrij te gebruiken voor onderwijsdoeleinden.
 ---
 
 🎓 **Developed by Stephane Van Rossem, Vincent Van Camp
-
