@@ -89,24 +89,7 @@ Exporteren naar PDF en Excel is voorzien.
 
 ## Werkwijze
 
-1. Ga naar je vak in **toets.ap.be**
-2. Navigeer naar **Cijfers → Rapportage → Exporteer** om je studentenlijst te exporteren
-3. Open de Scanner tool (scanner.html)
-4. Upload je Excelbestand
-5. Vul Examennaam, Datum, Uur en Lokaal in
-6. Start met scannen:
-    - Schakel tussen **IN** en **OUT**
-    - Scan studentnummers met scanner of manueel
-7. Exporteer resultaten naar PDF of Excel indien gewenst
-
-![alt text](images/image-2.png)
-
----
-
-## Voorbeeld screenshot
-
-![alt text](images/image.png)  
-![alt text](images/image-1.png)
+Lijsten trekken uit Ibamaflex stappenplan moet nog verder worden uitgeschreven.
 
 ---
 
