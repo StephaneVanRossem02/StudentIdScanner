@@ -22,6 +22,42 @@ function getCurrentTimeString() {
     });
 }
 
+function handleManualInput(event) {
+    if (event.key === "Enter") {
+        let input = event.target.value.trim();
+        if (input !== "") {
+            let firstTryID = extractID(input, 2);
+            let secondTryID = extractID(input, 1);
+
+            if (firstTryID) {
+                checkBarcode(firstTryID);
+
+                if (document.getElementById("scanStatus").innerText.includes("staat niet in de lijst")) {
+                    if (secondTryID) {
+                        checkBarcode(secondTryID);
+                    }
+                }
+            } else {
+                document.getElementById("scanStatus").innerHTML = `<span class='error'>Barcode niet herkend: ${input}</span>`;
+            }
+
+            event.target.value = "";
+            if (focusEnabled) {
+                event.target.focus();
+            }
+        }
+    }
+}
+
+
+function extractID(barcode, offset) {
+    if (barcode.length >= (offset + 6)) {
+        return barcode.substring(barcode.length - offset - 6, barcode.length - offset);
+    }
+    return null;
+}
+
+
 function checkBarcode(IDtoCheck) {
     let matchFound = false;
     let table = document.getElementById("dataTable");
@@ -37,28 +73,28 @@ function checkBarcode(IDtoCheck) {
             lastName = row.cells[1].textContent;
 
             if (scanMode === "in") {
-                if (row.cells[3].textContent.trim() === "" || row.cells[3].textContent === "NVT") {
-                    row.cells[3].textContent = getCurrentTimeString();
-                    row.cells[4].textContent = "";
+                if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
+                    row.cells[4].textContent = getCurrentTimeString();
+                    row.cells[5].textContent = "";
 
                     row.classList.remove("match", "no-match", "row-in", "row-out");
                     row.classList.add("row-in");
 
-                    excelData[rowIndex][3] = row.cells[3].textContent;
                     excelData[rowIndex][4] = row.cells[4].textContent;
+                    excelData[rowIndex][5] = row.cells[5].textContent;
                 } else {
                     document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
                     return;
                 }
             } else if (scanMode === "out") {
-                if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent !== "NVT") {
-                    if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
-                        row.cells[4].textContent = getCurrentTimeString();
+                if (row.cells[4].textContent.trim() !== "" && row.cells[4].textContent !== "NVT") {
+                    if (row.cells[5].textContent.trim() === "" || row.cells[5].textContent === "NVT") {
+                        row.cells[5].textContent = getCurrentTimeString();
 
                         row.classList.remove("match", "no-match", "row-in", "row-out");
                         row.classList.add("row-out");
 
-                        excelData[rowIndex][4] = row.cells[4].textContent;
+                        excelData[rowIndex][5] = row.cells[5].textContent;
                     } else {
                         document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al OUT gescand → dubbele OUT niet toegestaan</span>`;
                         return;
@@ -77,8 +113,8 @@ function checkBarcode(IDtoCheck) {
 
     if (matchFound) {
         document.getElementById("scanStatus").innerHTML = `<span class='success'>[${scanMode.toUpperCase()}] Gescanned: ${firstName} ${lastName} (${IDtoCheck})</span>`;
+
         updateInOutCounters();
-        sortExcelDataForDisplay();
         rebuildTable();
         sessionStorage.setItem("excelData", JSON.stringify(excelData));
     } else {
@@ -94,10 +130,10 @@ function updateInOutCounters() {
     let outCountTemp = 0;
 
     for (let row of rows) {
-        if (row.cells[3].textContent.trim() !== "" && row.cells[3].textContent.trim() !== "NVT") {
+        if (row.cells[4].textContent.trim() !== "" && row.cells[4].textContent.trim() !== "NVT") {
             inCount++;
         }
-        if (row.cells[4].textContent.trim() !== "" && row.cells[4].textContent.trim() !== "NVT") {
+        if (row.cells[5].textContent.trim() !== "" && row.cells[5].textContent.trim() !== "NVT") {
             outCountTemp++;
         }
     }
@@ -106,51 +142,6 @@ function updateInOutCounters() {
     document.getElementById("outCounter").textContent = outCountTemp;
     document.getElementById("scanTotal").textContent = totalStudents;
     document.getElementById("scanTotalOut").textContent = totalStudents;
-}
-
-function handleManualInput(event) {
-    if (event.key === "Enter") {
-        let input = event.target.value.trim();
-        if (input !== "") {
-            let firstTryID = extractID(input, 2);
-            let secondTryID = extractID(input, 1);
-
-            if (firstTryID) {
-                let email1 = "s" + firstTryID + "@ap.be";
-                checkBarcode(email1);
-
-                if (document.getElementById("scanStatus").innerText.includes("staat niet in de lijst")) {
-                    if (secondTryID) {
-                        let email2 = "s" + secondTryID + "@ap.be";
-                        checkBarcode(email2);
-                    }
-                }
-            }
-
-            event.target.value = "";
-            if (focusEnabled) {
-                event.target.focus();
-            }
-        }
-    }
-}
-
-function extractID(barcode, offset) {
-    if (barcode.length >= (offset + 6)) {
-        return barcode.substring(barcode.length - offset - 6, barcode.length - offset);
-    }
-    return null;
-}
-
-
-
-function cleanBarcode(barcode) {
-    if (barcode.length >= 8) {
-        barcode = barcode.substring(barcode.length - 2 - 6, barcode.length - 2);
-        return "s" + barcode + "@ap.be";
-    } else {
-        return barcode;
-    }
 }
 
 function toggleScanMode() {
@@ -165,62 +156,42 @@ function toggleFocus() {
     }
 }
 
-function formatDateForBE(isoDateStr) {
-    if (!isoDateStr) return "";
-    let parts = isoDateStr.split("-");
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-}
-
-function sortExcelDataForDisplay() {
-    const header = excelData[0];
-    const dataRows = excelData.slice(1);
-
-    dataRows.sort((a, b) => {
-        let scoreA = 2;
-        if (a[4] && a[4].trim() !== "" && a[4].trim() !== "NVT") {
-            scoreA = 0;
-        } else if (a[3] && a[3].trim() !== "" && a[3].trim() !== "NVT") {
-            scoreA = 1;
-        }
-
-        let scoreB = 2;
-        if (b[4] && b[4].trim() !== "" && b[4].trim() !== "NVT") {
-            scoreB = 0;
-        } else if (b[3] && b[3].trim() !== "" && b[3].trim() !== "NVT") {
-            scoreB = 1;
-        }
-
-        return scoreA - scoreB;
-    });
-
-    excelData = [header, ...dataRows];
-}
-
 function rebuildTable() {
     let table = document.getElementById("dataTable");
     table.innerHTML = "";
 
-    excelData.forEach((rowData, rowIndex) => {
-        const tr = document.createElement("tr");
+    excelData.forEach((row, index) => {
+        // Zet NVT indien leeg
+        if (index > 0) {
+            if (row[4].trim() === "") {
+                row[4] = "NVT";
+            }
+            if (row[5].trim() === "") {
+                row[5] = "NVT";
+            }
+        }
 
-        rowData.forEach((cellText, colIndex) => {
-            const cellTag = rowIndex === 0 ? "th" : "td";
-            const cell = document.createElement(cellTag);
-            cell.textContent = cellText;
-            tr.appendChild(cell);
+        // Bouw de rij
+        let tr = document.createElement("tr");
+
+        row.forEach((cell) => {
+            let cellElement = document.createElement(index === 0 ? "th" : "td");
+            cellElement.textContent = cell;
+            tr.appendChild(cellElement);
         });
 
-        if (rowIndex > 0) {
+        // Kleur toepassen
+        if (index > 0) {
             tr.classList.remove("match", "no-match", "row-in", "row-out");
 
-            const scannedIn = rowData[3];
-            const scannedOut = rowData[4];
+            const scannedIn = row[4];
+            const scannedOut = row[5];
 
-            if (scannedIn && scannedIn.trim() !== "" && scannedIn.trim() !== "NVT") {
+            if (scannedIn !== "NVT") {
                 tr.classList.add("row-in");
             }
 
-            if (scannedOut && scannedOut.trim() !== "" && scannedOut.trim() !== "NVT") {
+            if (scannedOut !== "NVT") {
                 tr.classList.remove("row-in");
                 tr.classList.add("row-out");
             }
@@ -233,81 +204,109 @@ function rebuildTable() {
     sessionStorage.setItem("excelData", JSON.stringify(excelData));
 }
 
-function finalizeExcel(dataToExport) {
-    let table = document.createElement("table");
 
-    dataToExport.forEach((rowData, rowIndex) => {
-        const tr = document.createElement("tr");
-
-        rowData.forEach((cellText) => {
-            const cellTag = rowIndex === 0 ? "th" : "td";
-            const cell = document.createElement(cellTag);
-            cell.textContent = cellText;
-            tr.appendChild(cell);
-        });
-
-        if (rowIndex > 0) {
-            if (tr.cells[3].textContent.trim() === "") {
-                tr.cells[3].textContent = "NVT";
-            }
-            if (tr.cells[4].textContent.trim() === "" && tr.cells[3].textContent !== "NVT") {
-                tr.cells[4].textContent = "NVT";
-            }
-        }
-
-        table.appendChild(tr);
-    });
-
-    return table;
+function insertInfoRow(table, text, colspan = 2) {
+    let row = table.insertRow(0);
+    let cell = row.insertCell(0);
+    cell.textContent = text;
+    cell.colSpan = colspan;
 }
 
-function insertInfoRow(table, text, colspan) {
-    let row = document.createElement("tr");
-    let cell = document.createElement("td");
-    cell.colSpan = colspan;
-    cell.textContent = text;
-    cell.style.fontWeight = "bold";
-    row.appendChild(cell);
-    table.insertBefore(row, table.firstChild);
+
+function getSortedExcelDataCopy() {
+    const header = excelData[0];
+    const dataRows = excelData.slice(1);
+
+    dataRows.sort((a, b) => {
+        let scoreA = 2;
+        if (a[5] && a[5].trim() !== "" && a[5].trim() !== "NVT") {
+            scoreA = 0;
+        } else if (a[4] && a[4].trim() !== "" && a[4].trim() !== "NVT") {
+            scoreA = 1;
+        }
+
+        let scoreB = 2;
+        if (b[5] && b[5].trim() !== "" && b[5].trim() !== "NVT") {
+            scoreB = 0;
+        } else if (b[4] && b[4].trim() !== "" && b[4].trim() !== "NVT") {
+            scoreB = 1;
+        }
+
+        return scoreA - scoreB;
+    });
+
+    return [header, ...dataRows];
+}
+
+function finalizeExcel() {
+    const sortedData = getSortedExcelDataCopy();
+    const date = document.getElementById("examDate").value;
+    const time = document.getElementById("examTime").value;
+    const location = document.getElementById("examLocationInput").value;
+
+    const infoRow = ["Datum:", date, "Uur:", time, "Locatie:", location, "", ""];
+    const spaceRow = ["", "", "", "", "", ""];
+
+    return [sortedData[0], infoRow, spaceRow, ...sortedData.slice(1)];
 }
 
 function exportToExcel() {
-    const sortedExcelData = getSortedExcelDataCopy();
-    const exportTable = finalizeExcel(sortedExcelData);
+    let exportTable = document.getElementById("dataTable").cloneNode(true);
 
+    // === Formatteer datum ===
+    const dateValue = document.getElementById("examDate").value;
+    const dateObj = new Date(dateValue);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const examDateFormatted = `${day}/${month}/${year}`;
+
+    // === Voeg info rows toe ===
     insertInfoRow(exportTable, `Examen: ${examName}`, exportTable.rows[0].cells.length);
-    insertInfoRow(exportTable, `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
-    insertInfoRow(exportTable, `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent} / ${totalStudents}`, exportTable.rows[0].cells.length);
-    insertInfoRow(exportTable, `Lokaal: ${document.getElementById("examLocationInput").value}`, exportTable.rows[0].cells.length);
+    insertInfoRow(exportTable, `Datum: ${examDateFormatted}`);
+    insertInfoRow(exportTable, `Uur: ${document.getElementById("examTime").value}`);
+    insertInfoRow(exportTable, `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent}`);
+    insertInfoRow(exportTable, `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent}`);
+    insertInfoRow(exportTable, `Lokaal: ${document.getElementById("examLocationInput").value}`);
 
-    let ws = XLSX.utils.table_to_sheet(exportTable);
-    let wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Scans");
+    // === Maak Excel bestand ===
+    let wb = XLSX.utils.table_to_book(exportTable);
     XLSX.writeFile(wb, `${examName}.xlsx`);
 }
 
-function exportToPDF() {
-    const sortedExcelData = getSortedExcelDataCopy();
-    const exportTable = finalizeExcel(sortedExcelData);
-    const {
-        jsPDF
-    } = window.jspdf;
-    let doc = new jsPDF();
 
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
 
-    let headerLeftX = 10;
-    let headerTopY = 10;
-    let lineHeight = 8;
+ function exportToPDF() {
+    const sortedData = getSortedExcelDataCopy();
+    const doc = new jspdf.jsPDF();
 
+    const columns = sortedData[0];
+    const rows = sortedData.slice(1);
+
+    const head = columns;
+    const body = rows;
+
+    // === Formatteer datum als DD/MM/YYYY ===
+    const dateValue = document.getElementById("examDate").value;
+    const dateObj = new Date(dateValue);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const examDateFormatted = `${day}/${month}/${year}`;
+
+    // === Header info ===
     let examNameText = `Examen: ${examName}`;
-    let examDateText = `Datum: ${formatDateForBE(document.getElementById("examDate").value)}`;
+    let examDateText = `Datum: ${examDateFormatted}`;
     let examTimeText = `Uur: ${document.getElementById("examTime").value}`;
     let examLocationText = `Lokaal: ${document.getElementById("examLocationInput").value}`;
-    let scanInText = `Aantal gescande studenten IN: ${document.getElementById("scanCounter").textContent} / ${totalStudents}`;
-    let scanOutText = `Aantal gescande studenten OUT: ${document.getElementById("outCounter").textContent} / ${totalStudents}`;
+    let scanInText = `Aantal IN: ${document.getElementById("scanCounter").textContent}`;
+    let scanOutText = `Aantal OUT: ${document.getElementById("outCounter").textContent}`;
 
+    let headerLeftX = 15;
+    let headerTopY = 20;
+    let lineHeight = 7;
+
+    doc.setFontSize(11);
     doc.text(examNameText, headerLeftX, headerTopY);
     doc.text(examDateText, headerLeftX, headerTopY + lineHeight);
     doc.text(examTimeText, headerLeftX, headerTopY + lineHeight * 2);
@@ -320,38 +319,22 @@ function exportToPDF() {
 
     let yPos = headerTopY + headerHeight + 5;
 
-    let rows = Array.from(exportTable.rows);
-    let header = rows.shift();
-    let head = Array.from(header.cells).map((cell) => cell.textContent);
-    let body = rows.map((row) => Array.from(row.cells).map((cell) => cell.textContent));
-
+    // === AutoTable ===
     doc.autoTable({
         startY: yPos,
         head: [head],
         body: body,
-        styles: {
-            fontSize: 10
-        },
-        headStyles: {
-            fillColor: [227, 6, 19]
-        },
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [227, 6, 19] },
         columnStyles: {
-            3: {
-                halign: "center",
-                cellWidth: 25
-            },
-            4: {
-                halign: "center",
-                cellWidth: 25
-            },
+            3: { halign: "center", cellWidth: 25 },
+            4: { halign: "center", cellWidth: 25 },
         },
-        margin: {
-            top: 20
-        },
-        didDrawPage: function(data) {
+        didDrawPage: function (data) {
+            let pageCount = doc.internal.getNumberOfPages();
             let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
 
-            let pageText = `Pagina ${pageCurrent} van {totalPages}`;
+            let pageText = `Pagina ${pageCurrent} van ${pageCount}`;
             let pageWidth = doc.internal.pageSize.getWidth();
             let textWidth = doc.getTextWidth(pageText);
 
@@ -359,86 +342,73 @@ function exportToPDF() {
             doc.text(pageText, pageWidth - textWidth - 10, doc.internal.pageSize.height - 10);
         },
     });
-    if (typeof doc.putTotalPages === 'function') {
-        doc.putTotalPages('{totalPages}');
-    }
+
     doc.save(`${examName}.pdf`);
 }
 
-function getSortedExcelDataCopy() {
-    const header = excelData[0];
-    const dataRows = excelData.slice(1);
-
-    dataRows.sort((a, b) => {
-        let scoreA = 2;
-        if (a[4] && a[4].trim() !== "" && a[4].trim() !== "NVT") {
-            scoreA = 0;
-        } else if (a[3] && a[3].trim() !== "" && a[3].trim() !== "NVT") {
-            scoreA = 1;
-        }
-
-        let scoreB = 2;
-        if (b[4] && b[4].trim() !== "" && b[4].trim() !== "NVT") {
-            scoreB = 0;
-        } else if (b[3] && b[3].trim() !== "" && b[3].trim() !== "NVT") {
-            scoreB = 1;
-        }
-
-        return scoreA - scoreB;
-    });
-
-    return [header, ...dataRows];
-}
 
 
-         function handleManualInput(event) {
-    if (event.key === "Enter") {
-        let input = event.target.value.trim();
-        if (input !== "") {
-            let firstTryID = extractID(input, 2);
-            let secondTryID = extractID(input, 1);
-
-            if (firstTryID) {
-                let email1 = "s" + firstTryID + "@ap.be";
-                checkBarcode(email1);
-
-                // Als eerste poging faalt, probeer met offset -1
-                if (document.getElementById("scanStatus").innerText.includes("staat niet in de lijst")) {
-                    if (secondTryID) {
-                        let email2 = "s" + secondTryID + "@ap.be";
-                        checkBarcode(email2);
-                    }
-                }
-            }
-
-            event.target.value = "";
-            if (focusEnabled) {
-                event.target.focus();
-            }
-        }
-    }
-}
 
 
 // === DOMContentLoaded ===
-window.addEventListener("DOMContentLoaded", function() {
+window.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("manualInput").addEventListener("keydown", handleManualInput);
+    document.getElementById("scanModeSwitch").addEventListener("change", toggleScanMode);
+    document.getElementById("focusToggle").addEventListener("change", toggleFocus);
 
-    // Init
+    document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
+    document.getElementById("exportPdfBtn").addEventListener("click", exportToPDF);
+
     document.getElementById("scanStatus").innerHTML = "Nog niets gescand";
-        if (!sessionStorage.getItem("examDate")) {
+
+    // === Restore examName, date, time, location ===
+    if (sessionStorage.getItem("examName")) {
+        document.getElementById("examInput").value = sessionStorage.getItem("examName");
+        examName = sessionStorage.getItem("examName");
+    }
+    if (sessionStorage.getItem("examDate")) {
+        document.getElementById("examDate").value = sessionStorage.getItem("examDate");
+    } else {
+        // default datum als leeg → vandaag zetten:
         const today = new Date();
         const day = String(today.getDate()).padStart(2, '0');
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const year = today.getFullYear();
         document.getElementById("examDate").value = `${year}-${month}-${day}`;
     }
+    if (sessionStorage.getItem("examTime")) {
+        document.getElementById("examTime").value = sessionStorage.getItem("examTime");
+    }
+    if (sessionStorage.getItem("examLocation")) {
+        document.getElementById("examLocationInput").value = sessionStorage.getItem("examLocation");
+    }
 
-    // File input
-    document.getElementById("fileInput").addEventListener("change", function(event) {
+    // === Listeners voor bijhouden in sessionStorage ===
+    document.getElementById("examInput").addEventListener("input", function () {
+        sessionStorage.setItem("examName", this.value);
+        examName = this.value;
+    });
+    document.getElementById("examDate").addEventListener("input", function () {
+        sessionStorage.setItem("examDate", this.value);
+    });
+    document.getElementById("examTime").addEventListener("input", function () {
+        sessionStorage.setItem("examTime", this.value);
+    });
+    document.getElementById("examLocationInput").addEventListener("input", function () {
+        sessionStorage.setItem("examLocation", this.value);
+    });
+
+    // === Restore excelData als het bestaat ===
+    if (sessionStorage.getItem("excelData")) {
+        excelData = JSON.parse(sessionStorage.getItem("excelData"));
+        rebuildTable();
+        document.getElementById("exportExcelBtn").disabled = false;
+        document.getElementById("exportPdfBtn").disabled = false;
+    }
+
+    // === File input voor Excel ===
+    document.getElementById("fileInput").addEventListener("change", function (event) {
         document.getElementById("loadingSpinner").style.display = "block";
-
-        document.getElementById("chooseFileBtn").classList.add("chosen");
-        document.getElementById("fileName").classList.add("chosen");
 
         scanCount = 0;
         outCount = 0;
@@ -448,20 +418,56 @@ window.addEventListener("DOMContentLoaded", function() {
         let file = event.target.files[0];
         let reader = new FileReader();
 
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             let data = new Uint8Array(e.target.result);
-            let workbook = XLSX.read(data, {
-                type: "array"
-            });
+            let workbook = XLSX.read(data, { type: "array" });
             let sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-            excelData = XLSX.utils.sheet_to_json(sheet, {
-                header: 1
-            }).map((row) => row.slice(0, 3));
+            let rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            let table = document.getElementById("dataTable");
-            table.innerHTML = "";
+            const headerRow = rawData[0];
+            const pointerCol = headerRow.findIndex(col => col.toLowerCase().includes("pointer"));
+			const studentCol = headerRow.findIndex(col => col.toLowerCase().includes("student"));
+            const subgroepCol = headerRow.indexOf("Subgroep");
+            const vrijstellingCol = headerRow.indexOf("Vrijstelling");
 
+            excelData = [["Voornaam", "Achternaam", "Pointer", "Subgroep", "Scanned In", "Scanned Out"]];
+
+            for (let i = 1; i < rawData.length; i++) {
+                const row = rawData[i];
+                const pointer = row[pointerCol] ? String(row[pointerCol]).trim() : "";
+				const studentNaam = row[studentCol] ? String(row[studentCol]).trim() : "";
+                const subgroep = row[subgroepCol] ? String(row[subgroepCol]).trim() : "";
+                const vrijstelling = row[vrijstellingCol] ? String(row[vrijstellingCol]).trim() : "";
+
+                if (vrijstelling.toUpperCase() === "EVK") {
+                    continue;
+                }
+
+				const nameParts = studentNaam.split(" ");
+				const voornaam = nameParts.pop();  // laatste woord = voornaam
+				const achternaam = nameParts.join(" ");  // rest = achternaam
+
+                excelData.push([voornaam, achternaam, pointer, subgroep, "", ""]);
+            }
+
+            rebuildTable();
+
+            totalStudents = excelData.length - 1;
+            document.getElementById("totalStudents").textContent = `Aantal studenten in lijst: ${totalStudents}`;
+            document.getElementById("scanTotal").textContent = totalStudents;
+            document.getElementById("scanTotalOut").textContent = totalStudents;
+
+            document.getElementById("loadingSpinner").style.display = "none";
+
+            document.getElementById("exportExcelBtn").disabled = false;
+            document.getElementById("exportPdfBtn").disabled = false;
+
+            if (focusEnabled) document.getElementById("manualInput").focus();
+
+            sessionStorage.setItem("excelData", JSON.stringify(excelData));
+
+            // Bestandsnaam automatisch zetten
             let lastDashIndex = file.name.lastIndexOf("-");
             if (lastDashIndex !== -1) {
                 examName = file.name.substring(0, lastDashIndex).trim();
@@ -474,98 +480,9 @@ window.addEventListener("DOMContentLoaded", function() {
                 input.value = examName;
                 sessionStorage.setItem("examName", examName);
             }
-
-            excelData.forEach((row, index) => {
-                if (index === 0) {
-                    row.push("Scanned In");
-                    row.push("Scanned Out");
-                } else {
-                    row.push("");
-                    row.push("");
-                }
-
-                let tr = document.createElement("tr");
-                row.forEach((cell) => {
-                    let cellElement = document.createElement(index === 0 ? "th" : "td");
-                    cellElement.textContent = cell;
-                    tr.appendChild(cellElement);
-                });
-                table.appendChild(tr);
-            });
-
-            totalStudents = excelData.length - 1;
-            document.getElementById("totalStudents").textContent = `Aantal studenten in lijst: ${totalStudents}`;
-            document.getElementById("scanTotal").textContent = totalStudents;
-            document.getElementById("scanTotalOut").textContent = totalStudents;
-
-            if (excelData.length > 1) {
-                document.getElementById("exportExcelBtn").disabled = false;
-                document.getElementById("exportPdfBtn").disabled = false;
-            } else {
-                document.getElementById("exportExcelBtn").disabled = true;
-                document.getElementById("exportPdfBtn").disabled = true;
-            }
-
-            document.getElementById("loadingSpinner").style.display = "none";
-
-            if (focusEnabled) document.getElementById("manualInput").focus();
-
-            sessionStorage.setItem("excelData", JSON.stringify(excelData));
         };
 
         reader.readAsArrayBuffer(file);
     });
-
-    // Events voor velden
-    document.getElementById("examInput").addEventListener("input", function() {
-        sessionStorage.setItem("examName", this.value);
-    });
-
-    document.getElementById("examDate").addEventListener("input", function() {
-        sessionStorage.setItem("examDate", this.value);
-    });
-
-    document.getElementById("examTime").addEventListener("input", function() {
-        sessionStorage.setItem("examTime", this.value);
-    });
-
-    document.getElementById("examLocationInput").addEventListener("input", function() {
-        sessionStorage.setItem("examLocation", this.value);
-    });
-
-    // Events voor buttons en switches
-    document.getElementById("manualInput").addEventListener("keydown", handleManualInput);
-    document.getElementById("scanModeSwitch").addEventListener("change", toggleScanMode);
-    document.getElementById("focusToggle").addEventListener("change", toggleFocus);
-    document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
-    document.getElementById("exportPdfBtn").addEventListener("click", exportToPDF);
-
-    // Enter → focus manualInput
-    document.addEventListener("keydown", function(e) {
-        if (e.key === "Enter") {
-            document.getElementById("manualInput").focus();
-        }
-    });
-
-    // SessionStorage terugzetten
-    if (sessionStorage.getItem("examName")) {
-        document.getElementById("examInput").value = sessionStorage.getItem("examName");
-        examName = document.getElementById("examInput").value;
-    }
-    if (sessionStorage.getItem("examDate")) {
-        document.getElementById("examDate").value = sessionStorage.getItem("examDate");
-    }
-    if (sessionStorage.getItem("examTime")) {
-        document.getElementById("examTime").value = sessionStorage.getItem("examTime");
-    }
-    if (sessionStorage.getItem("examLocation")) {
-        document.getElementById("examLocationInput").value = sessionStorage.getItem("examLocation");
-    }
-
-    if (sessionStorage.getItem("excelData")) {
-        excelData = JSON.parse(sessionStorage.getItem("excelData"));
-        rebuildTable();
-        document.getElementById("exportExcelBtn").disabled = false;
-        document.getElementById("exportPdfBtn").disabled = false;
-    }
 });
+
