@@ -50,90 +50,136 @@ function handleManualInput(event) {
 }
 
 
-function extractID(barcode, offset) {
-    if (barcode.length >= (offset + 6)) {
-        return barcode.substring(barcode.length - offset - 6, barcode.length - offset);
+function extractID(barcode) {
+    let onlyDigits = barcode.replace(/[^0-9]/g, "");
+
+    if (onlyDigits.length === 6) {
+        return onlyDigits;
     }
+
+    if (onlyDigits.length >= 8) {
+        // Probeer offset 2 en 1 zoals vroeger → door return array van candidates
+        let candidates = [
+            onlyDigits.slice(-8, -2),
+            onlyDigits.slice(-7, -1),
+            onlyDigits.slice(-6)
+        ];
+
+        // Geef eerste match die in lijst zit
+        for (let candidate of candidates) {
+            if (excelData.some(row => row[2] === candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    if (onlyDigits.length >= 6) {
+        return onlyDigits.slice(-6);
+    }
+
     return null;
 }
 
 
+
+
+	
+
 function checkBarcode(IDtoCheck) {
-    let matchFound = false;
     let table = document.getElementById("dataTable");
     let rows = Array.from(table.rows).slice(1);
-    let firstName, lastName;
+    let matchFound = false;
 
     for (let row of rows) {
-        let idCell = row.cells[2];
-        if (idCell && idCell.textContent === IDtoCheck) {
-            let rowIndex = excelData.findIndex((dataRow) => dataRow[2] === IDtoCheck);
+        let studentnummer = row.cells[2].textContent.trim();
 
-            firstName = row.cells[0].textContent;
-            lastName = row.cells[1].textContent;
+        if (studentnummer === IDtoCheck) {
+            let firstName = row.cells[0].textContent.trim();
+            let lastName = row.cells[1].textContent.trim();
+            let rowIndex = rows.indexOf(row) + 1;
 
-           if (scanMode === "in") {
-		let nonParticipant = document.getElementById("nonParticipantToggle").checked;
+            let nonParticipant = document.getElementById("nonParticipantToggle").checked;
+            let scanStatusEl = document.getElementById("scanStatus");
+            scanStatusEl.style.display = "block";
 
-		if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
+            if (scanMode === "in") {
+                if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
+                    if (nonParticipant) {
+                        row.cells[4].textContent = "Afgetekend zonder deelname";
+                        row.cells[5].textContent = "Afgetekend zonder deelname";
 
-			if (nonParticipant) {
-				row.cells[4].textContent = "Afgetekend zonder deelname";
-				row.cells[5].textContent = "Afgetekend zonder deelname";
+                        excelData[rowIndex][4] = "Afgetekend zonder deelname";
+                        excelData[rowIndex][5] = "Afgetekend zonder deelname";
 
-				excelData[rowIndex][4] = "Afgetekend zonder deelname";
-				excelData[rowIndex][5] = "Afgetekend zonder deelname";
-			} else {
-				row.cells[4].textContent = getCurrentTimeString();
-				row.cells[5].textContent = "";
+                        row.classList.remove("match", "no-match", "row-in", "row-out");
+                        row.classList.add("row-in");
 
-				excelData[rowIndex][4] = row.cells[4].textContent;
-				excelData[rowIndex][5] = row.cells[5].textContent;
-			}
+                        scanStatusEl.innerHTML = `<span class='success'>[IN] ${firstName} ${lastName} (${IDtoCheck}) → Afgetekend zonder deelname</span>`;
+                    } else {
+                        let tijd = getCurrentTimeString();
 
-			row.classList.remove("match", "no-match", "row-in", "row-out");
-			row.classList.add("row-in");
+                        row.cells[4].textContent = tijd;
+                        row.cells[5].textContent = "";
 
-		} else {
-			document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
-			return;
-		}
+                        excelData[rowIndex][4] = tijd;
+                        excelData[rowIndex][5] = "";
 
-            } else if (scanMode === "out") {
-                if (row.cells[4].textContent.trim() !== "" && row.cells[4].textContent !== "NVT") {
-                    if (row.cells[5].textContent.trim() === "" || row.cells[5].textContent === "NVT") {
-                        row.cells[5].textContent = getCurrentTimeString();
+                        row.classList.remove("match", "no-match", "row-in", "row-out");
+                        row.classList.add("row-in");
+
+                        scanStatusEl.innerHTML = `<span class='success'>[IN] ${firstName} ${lastName} (${IDtoCheck}) is IN gescand om ${tijd}</span>`;
+                    }
+                } else {
+                    scanStatusEl.innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al IN gescand → dubbele IN niet toegestaan</span>`;
+                    return;
+                }
+            } else {
+                if (row.cells[5].textContent.trim() === "" || row.cells[5].textContent === "NVT") {
+                    if (nonParticipant) {
+                        row.cells[5].textContent = "Afgetekend zonder deelname";
+
+                        excelData[rowIndex][5] = "Afgetekend zonder deelname";
 
                         row.classList.remove("match", "no-match", "row-in", "row-out");
                         row.classList.add("row-out");
 
-                        excelData[rowIndex][5] = row.cells[5].textContent;
+                        scanStatusEl.innerHTML = `<span class='success'>[OUT] ${firstName} ${lastName} (${IDtoCheck}) → Afgetekend zonder deelname</span>`;
                     } else {
-                        document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al OUT gescand → dubbele OUT niet toegestaan</span>`;
-                        return;
+                        let tijd = getCurrentTimeString();
+
+                        row.cells[5].textContent = tijd;
+
+                        excelData[rowIndex][5] = tijd;
+
+                        row.classList.remove("match", "no-match", "row-in", "row-out");
+                        row.classList.add("row-out");
+
+                        scanStatusEl.innerHTML = `<span class='success'>[OUT] ${firstName} ${lastName} (${IDtoCheck}) is OUT gescand om ${tijd}</span>`;
                     }
                 } else {
-                    document.getElementById("scanStatus").innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) heeft nog geen IN-scan → OUT niet toegestaan</span>`;
+                    scanStatusEl.innerHTML = `<span class='error'>${firstName} ${lastName} (${IDtoCheck}) is al OUT gescand → dubbele OUT niet toegestaan</span>`;
                     return;
                 }
             }
 
-            matchFound = true;
             table.insertBefore(row, table.rows[1]);
+
+            updateInOutCounters();
+            sessionStorage.setItem("excelData", JSON.stringify(excelData));
+
+            matchFound = true;
             break;
         }
     }
 
-    if (matchFound) {
-        document.getElementById("scanStatus").innerHTML = `<span class='success'>[${scanMode.toUpperCase()}] Gescanned: ${firstName} ${lastName} (${IDtoCheck})</span>`;
-
-        updateInOutCounters();
-        rebuildTable();
-        sessionStorage.setItem("excelData", JSON.stringify(excelData));
-    } else {
-        document.getElementById("scanStatus").innerHTML = `<span class='error'>${IDtoCheck} staat niet in de lijst</span>`;
+    if (!matchFound) {
+        const scanStatusEl = document.getElementById("scanStatus");
+        scanStatusEl.style.display = "block";
+        scanStatusEl.innerHTML = `<span class='error'>Studentnummer ${IDtoCheck} niet gevonden in lijst!</span>`;
     }
 }
+
+
 
 function updateInOutCounters() {
     let table = document.getElementById("dataTable");
@@ -179,7 +225,9 @@ function rebuildTable() {
     let table = document.getElementById("dataTable");
     table.innerHTML = "";
 
-    excelData.forEach((row, index) => {
+    const sortedData = getSortedExcelDataCopy();
+
+    sortedData.forEach((row, index) => {
         // Zet NVT indien leeg
         if (index > 0) {
             if (row[4].trim() === "") {
@@ -200,29 +248,29 @@ function rebuildTable() {
             let cellElement = document.createElement(index === 0 ? "th" : "td");
 
             // Voor opmerkingen-kolom → toon als textContent
-         if (cellIndex === 6 && index > 0) {
-    // Opmerkingen tonen als lijst
-			cellElement.innerHTML = cell
-				.split("\n")
-				.map(r => `<div>${r}</div>`)
-				.join("");
+            if (cellIndex === 6 && index > 0) {
+                // Opmerkingen tonen als lijst
+                cellElement.innerHTML = cell
+                    .split("\n")
+                    .map(r => `<div>${r}</div>`)
+                    .join("");
 
-			// Voeg knop toe in aparte div
-			let buttonDiv = document.createElement("div");
-			buttonDiv.style.marginTop = "5px";
+                // Voeg knop toe in aparte div
+                let buttonDiv = document.createElement("div");
+                buttonDiv.style.marginTop = "5px";
 
-			let button = document.createElement("button");
-			button.textContent = "📝 Opmerking";
-			button.onclick = function () {
-				addRemark(row[2]); // studentnummer
-			};
-			buttonDiv.appendChild(button);
+                let button = document.createElement("button");
+                button.textContent = "📝 Opmerking";
+                button.onclick = function() {
+                    addRemark(row[2]); // studentnummer
+                };
+                buttonDiv.appendChild(button);
 
-			cellElement.appendChild(buttonDiv);
-		} else {
-			// Voor andere kolommen → normale tekst
-			cellElement.textContent = cell;
-		}
+                cellElement.appendChild(buttonDiv);
+            } else {
+                // Voor andere kolommen → normale tekst
+                cellElement.textContent = cell;
+            }
 
             tr.appendChild(cellElement);
         });
@@ -242,20 +290,16 @@ function rebuildTable() {
                 tr.classList.remove("row-in");
                 tr.classList.add("row-out");
             }
-			if (row[7] === "Afgetekend zonder deelname") {
-				tr.classList.add("row-nonparticipant");
-			}
+            if (row[7] === "Afgetekend zonder deelname") {
+                tr.classList.add("row-nonparticipant");
+            }
         }
 
         table.appendChild(tr);
     });
-	const scanStatusEl = document.getElementById("scanStatus");
-	if (scanStatusEl) {
-		scanStatusEl.innerHTML = "Nog niets gescand";
-	}
-	
-	let totalStudents = excelData.length - 1;
-	document.getElementById("totalStudents").textContent = totalStudents;
+
+    let totalStudents = excelData.length - 1;
+    document.getElementById("totalStudents").textContent = totalStudents;
 
     updateInOutCounters();
     sessionStorage.setItem("excelData", JSON.stringify(excelData));
@@ -325,9 +369,6 @@ function exportToExcel() {
 
 
 
-
-
-
 function exportToPDF() {
     const sortedData = getSortedExcelDataCopy();
     const doc = new jspdf.jsPDF(); // standaard portrait A4
@@ -376,21 +417,41 @@ function exportToPDF() {
         startY: yPos,
         head: [head],
         body: body,
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [227, 6, 19] },
+        styles: {
+            fontSize: 9
+        },
+        headStyles: {
+            fillColor: [227, 6, 19]
+        },
         theme: 'grid',
         tableWidth: 'auto', // AUTOMATISCH aanpassen
         columnStyles: {
-            0: { cellWidth: 'auto' },  // Voornaam
-            1: { cellWidth: 'auto' },  // Achternaam
-            2: { cellWidth: 'auto' },  // Pointer
-            3: { cellWidth: 'auto' },  // Subgroep
-            4: { halign: "center", cellWidth: 'auto' },  // IN
-            5: { halign: "center", cellWidth: 'auto' },  // OUT
-            6: { cellWidth: 'auto' },  // Opmerkingen
+            0: {
+                cellWidth: 'auto'
+            }, // Voornaam
+            1: {
+                cellWidth: 'auto'
+            }, // Achternaam
+            2: {
+                cellWidth: 'auto'
+            }, // Pointer
+            3: {
+                cellWidth: 'auto'
+            }, // Subgroep
+            4: {
+                halign: "center",
+                cellWidth: 'auto'
+            }, // IN
+            5: {
+                halign: "center",
+                cellWidth: 'auto'
+            }, // OUT
+            6: {
+                cellWidth: 'auto'
+            }, // Opmerkingen
         },
 
-        didDrawPage: function (data) {
+        didDrawPage: function(data) {
             let pageCount = doc.internal.getNumberOfPages();
             let pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
 
@@ -463,7 +524,7 @@ function filterTable() {
 
 
 // === DOMContentLoaded ===
-window.addEventListener("DOMContentLoaded", function () {
+window.addEventListener("DOMContentLoaded", function() {
     document.getElementById("manualInput").addEventListener("keydown", handleManualInput);
     document.getElementById("scanModeSwitch").addEventListener("change", toggleScanMode);
     document.getElementById("focusToggle").addEventListener("change", toggleFocus);
@@ -496,17 +557,17 @@ window.addEventListener("DOMContentLoaded", function () {
     }
 
     // === Listeners voor bijhouden in sessionStorage ===
-    document.getElementById("examInput").addEventListener("input", function () {
+    document.getElementById("examInput").addEventListener("input", function() {
         sessionStorage.setItem("examName", this.value);
         examName = this.value;
     });
-    document.getElementById("examDate").addEventListener("input", function () {
+    document.getElementById("examDate").addEventListener("input", function() {
         sessionStorage.setItem("examDate", this.value);
     });
-    document.getElementById("examTime").addEventListener("input", function () {
+    document.getElementById("examTime").addEventListener("input", function() {
         sessionStorage.setItem("examTime", this.value);
     });
-    document.getElementById("examLocationInput").addEventListener("input", function () {
+    document.getElementById("examLocationInput").addEventListener("input", function() {
         sessionStorage.setItem("examLocation", this.value);
     });
 
@@ -519,7 +580,7 @@ window.addEventListener("DOMContentLoaded", function () {
     }
 
     // === File input voor Excel ===
-    document.getElementById("fileInput").addEventListener("change", function (event) {
+    document.getElementById("fileInput").addEventListener("change", function(event) {
 
         scanCount = 0;
         outCount = 0;
@@ -527,25 +588,31 @@ window.addEventListener("DOMContentLoaded", function () {
         let file = event.target.files[0];
         let reader = new FileReader();
 
-        reader.onload = function (e) {
+        reader.onload = function(e) {
             let data = new Uint8Array(e.target.result);
-            let workbook = XLSX.read(data, { type: "array" });
+            let workbook = XLSX.read(data, {
+                type: "array"
+            });
             let sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-            let rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            let rawData = XLSX.utils.sheet_to_json(sheet, {
+                header: 1
+            });
 
             const headerRow = rawData[0];
             const pointerCol = headerRow.findIndex(col => col.toLowerCase().includes("pointer"));
-			const studentCol = headerRow.findIndex(col => col.toLowerCase().includes("student"));
+            const studentCol = headerRow.findIndex(col => col.toLowerCase().includes("student"));
             const subgroepCol = headerRow.indexOf("Subgroep");
             const vrijstellingCol = headerRow.indexOf("Vrijstelling");
 
-			excelData = [["Voornaam", "Achternaam", "Pointer", "Subgroep", "Scanned In", "Scanned Out", "Opmerkingen"]];
+            excelData = [
+                ["Voornaam", "Achternaam", "Pointer", "Subgroep", "Scanned In", "Scanned Out", "Opmerkingen"]
+            ];
 
             for (let i = 1; i < rawData.length; i++) {
                 const row = rawData[i];
                 const pointer = row[pointerCol] ? String(row[pointerCol]).trim() : "";
-				const studentNaam = row[studentCol] ? String(row[studentCol]).trim() : "";
+                const studentNaam = row[studentCol] ? String(row[studentCol]).trim() : "";
                 const subgroep = row[subgroepCol] ? String(row[subgroepCol]).trim() : "";
                 const vrijstelling = row[vrijstellingCol] ? String(row[vrijstellingCol]).trim() : "";
 
@@ -553,11 +620,11 @@ window.addEventListener("DOMContentLoaded", function () {
                     continue;
                 }
 
-				const nameParts = studentNaam.split(" ");
-				const voornaam = nameParts.pop();  // laatste woord = voornaam
-				const achternaam = nameParts.join(" ");  // rest = achternaam
+                const nameParts = studentNaam.split(" ");
+                const voornaam = nameParts.pop(); // laatste woord = voornaam
+                const achternaam = nameParts.join(" "); // rest = achternaam
 
-				excelData.push([voornaam, achternaam, pointer, subgroep, "", "", ""]);
+                excelData.push([voornaam, achternaam, pointer, subgroep, "", "", ""]);
             }
 
             rebuildTable();
@@ -577,8 +644,8 @@ window.addEventListener("DOMContentLoaded", function () {
             } else {
                 examName = file.name;
             }
-			
-			examName = examName.replace(/\.[^/.]+$/, "");
+
+            examName = examName.replace(/\.[^/.]+$/, "");
 
             const input = document.getElementById("examInput");
             if (input) {
@@ -590,4 +657,3 @@ window.addEventListener("DOMContentLoaded", function () {
         reader.readAsArrayBuffer(file);
     });
 });
-
