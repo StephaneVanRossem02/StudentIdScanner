@@ -9,6 +9,22 @@ Deze tool is bedoeld voor het scannen van studentennummers bij examens, met onde
 ✅ Export naar PDF en Excel  
 ✅ SessionStorage: bewaart status bij refresh  
 ✅ Ondersteuning voor examennaam, datum, uur en lokaal
+✅ Student aftekenen zonder deelname
+
+---
+
+## Gebruik
+1. Ga naar iBaMaFlex en log in 
+2. Klik op **'Groepslijsten \<jaar>'**
+3. Selecteer alle subgroepen van het onderdeel/vak dat je wil scannen/examineren
+4. Druk op exporteren (Excel logo) **'E-mailadressen studenten'**
+5. Upload je studentenlijst via de **'Bestand kiezen'** knop.
+6. Pas de naam van het examen aan.
+7. Vul datum, uur en lokaal in.
+8. Start met scannen:
+   - Schakel tussen **IN** en **OUT**.
+   - Scan studentnummers (scanner of handmatig).
+9. Exporteer het resultaat naar PDF of Excel indien gewenst.
 
 ---
 
@@ -16,10 +32,7 @@ Deze tool is bedoeld voor het scannen van studentennummers bij examens, met onde
 
 ### 📥 Importeren van studentenlijst
 
-- Upload een `.xlsx` bestand (Excel), gestructureerd als:
-
-| Voornaam | Achternaam | Studentnummer |
-|----------|------------|---------------|
+- Upload een `.xlsx` bestand (Excel), gestructureerd als het voorbeeldbestand, of de export vanuit iBaMaFlex
 
 - Na upload worden kolommen **Scanned In** en **Scanned Out** automatisch toegevoegd.
 
@@ -52,18 +65,6 @@ Bij het exporteren wordt een **gesorteerde kopie van de data** gebruikt, zodat d
 
 ---
 
-## Gebruik
-
-1. Upload je studentenlijst via de "Choose file" knop.
-2. Examennaam wordt automatisch uit bestandsnaam gehaald of kan manueel worden aangepast.
-3. Vul datum, uur en lokaal in.
-4. Start met scannen:
-   - Schakel tussen **IN** en **OUT**.
-   - Scan studentnummers (scanner of handmatig).
-5. Exporteer het resultaat naar PDF of Excel indien gewenst.
-
----
-
 ## Technische details
 
 - **Frontend:** HTML + JavaScript
@@ -84,12 +85,6 @@ Bij het exporteren wordt een **gesorteerde kopie van de data** gebruikt, zodat d
 Deze tool wordt gebruikt om studenten in en uit te scannen bij examens.  
 Je kan eenvoudig een studentenlijst uploaden (Excel) en de scanstatus bijhouden.  
 Exporteren naar PDF en Excel is voorzien.
-
----
-
-## Werkwijze
-
-Lijsten trekken uit Ibamaflex stappenplan moet nog verder worden uitgeschreven.
 
 ---
 
