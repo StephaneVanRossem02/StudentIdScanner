@@ -323,3 +323,5 @@ body {
     color: #555;
     font-style: italic;
 }
+.row-selected { outline: 3px solid #2196f3; background-color: #e6f0ff !important; }
+

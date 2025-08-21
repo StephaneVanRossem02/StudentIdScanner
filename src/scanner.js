@@ -4,12 +4,144 @@ let notScannedCode = "";
 
 let examName = "";
 let excelData = [];
+        try { document.getElementById("undoSelectedBtn").disabled = true; } catch(e) {}
 let scanCount = 0;
 let outCount = 0;
 let totalStudents = 0;
 
 let scanMode = "in";
 let focusEnabled = false;
+
+// === UNDO SUPPORT ===
+let __undoKeyboardWired = false;
+const historyByStudent = new Map(); // studentnummer -> [{prevIn, prevOut, ts}]
+
+function pushHistory(studentnummer, prevIn, prevOut) {
+    const arr = historyByStudent.get(studentnummer) || [];
+    arr.push({ prevIn, prevOut, ts: Date.now() });
+    historyByStudent.set(studentnummer, arr);
+}
+
+function undoSelectedRow() {
+const table = document.getElementById("dataTable");
+    const scanStatusEl = document.getElementById("scanStatus");
+    if (!table) return;
+    const tr = table.querySelector("tr.row-selected");
+    if (!tr) {
+        if (scanStatusEl) {
+            scanStatusEl.style.display = "block";
+            scanStatusEl.innerHTML = "<span class='error'>Selecteer eerst een rij.</span>";
+        
+    try { if (tr) tr.classList.remove("row-selected"); } catch(e) {}
+}
+        return;
+    }
+    const studentnummer = (tr.cells[2]?.textContent || "").trim();
+    if (!studentnummer) return;
+
+    const dataIndex = excelData.findIndex(r => r[2] === studentnummer);
+    if (dataIndex <= 0) {
+        if (scanStatusEl) {
+            scanStatusEl.style.display = "block";
+            scanStatusEl.innerHTML = "<span class='error'>Student niet gevonden in data.</span>";
+        }
+        return;
+    }
+
+    // Maak leeg: IN, OUT, OPM
+    excelData[dataIndex][4] = "";
+    excelData[dataIndex][5] = "";
+    excelData[dataIndex][6] = "";
+
+    // Bewaar en reload UI
+    sessionStorage.setItem("excelData", JSON.stringify(excelData));
+    rebuildTable();
+
+            try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
+            try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
+    try { enableRowSelection(); } catch(e) {}
+    try { updateInOutCounters(); } catch(e) {}
+
+    if (scanStatusEl) {
+        const firstName = (tr.cells[0]?.textContent || "").trim();
+        const lastName  = (tr.cells[1]?.textContent || "").trim();
+        scanStatusEl.style.display = "block";
+        scanStatusEl.innerHTML = `<span class='success'>In/Out/Opmerkingen leeggemaakt voor ${firstName} ${lastName} (${studentnummer}).</span>`;
+    }
+
+}
+
+function enableRowSelection() {
+    // no-op: we gebruiken nu alleen delegated row selection
+}
+
+
+
+// === Delegated row selection (robust across rebuilds) ===
+let __rowSelectionDelegated = false;
+function setupDelegatedRowSelection() {
+    if (__rowSelectionDelegated) return;
+    const table = document.getElementById("dataTable");
+    if (!table) return;
+    table.addEventListener("click", (e) => {
+        const tr = e.target.closest("tr");
+        if (!tr) return;
+        // skip header
+        const header = table.querySelector("tr");
+        if (tr === header) return;
+
+        const prev = table.querySelector("tr.row-selected");
+        if (prev && prev !== tr) prev.classList.remove("row-selected");
+        tr.classList.toggle("row-selected");
+    });
+    __rowSelectionDelegated = true;
+}
+
+
+
+function createUndoButton() {
+    // Zoek bestaande knop
+    let btn = document.getElementById("undoSelectedBtn");
+
+    // Bestaat hij niet? Maak 'm aan en voeg toe
+    if (!btn) {
+        btn = document.createElement("button");
+        btn.id = "undoSelectedBtn";
+        btn.type = "button";
+        btn.textContent = "Undo geselecteerde rij";
+        btn.style.margin = "8px";
+        const targets = [
+            document.getElementById("controls"),
+            document.getElementById("buttons"),
+            document.querySelector(".buttonRow"),
+            document.getElementById("scanStatus"),
+            document.body
+        ];
+        for (const t of targets) {
+            if (t) { t.appendChild(btn); break; }
+        }
+    }
+
+    // Wire de click handler als dit nog niet gebeurd is
+    if (!btn.dataset || !btn.dataset.wired) {
+        btn.addEventListener("click", undoSelectedRow);
+        if (!btn.dataset) btn.dataset = {};
+        btn.dataset.wired = "1";
+    }
+
+    // Keyboard shortcut: Ctrl/⌘ + Z (eens registreren)
+    if (!__undoKeyboardWired) {
+        document.addEventListener("keydown", (e) => {
+            const key = (e.key || "").toLowerCase();
+            if ((e.ctrlKey || e.metaKey) && key === "z") {
+                e.preventDefault();
+                undoSelectedRow();
+            }
+        });
+        __undoKeyboardWired = true;
+    }
+}
+// === END UNDO SUPPORT ===
 
 // === Functies ===
 
@@ -51,34 +183,26 @@ function handleManualInput(event) {
 
 
 function extractID(barcode) {
-    let onlyDigits = barcode.replace(/[^0-9]/g, "");
+    const sixDigitGroups = barcode.match(/\d{6}/g) || [];
 
-    if (onlyDigits.length === 6) {
-        return onlyDigits;
+    for (const cand of sixDigitGroups) {
+        if (excelData?.some?.(row => row[2] === cand)) return cand;
     }
+    if (sixDigitGroups.length === 1) return sixDigitGroups[0];
 
-    if (onlyDigits.length >= 8) {
-        // Probeer offset 2 en 1 zoals vroeger → door return array van candidates
-        let candidates = [
-            onlyDigits.slice(-8, -2),
-            onlyDigits.slice(-7, -1),
-            onlyDigits.slice(-6)
-        ];
+    const onlyDigits = barcode.replace(/\D/g, "");
+    if (onlyDigits.length === 6) return onlyDigits;
 
-        // Geef eerste match die in lijst zit
-        for (let candidate of candidates) {
-            if (excelData.some(row => row[2] === candidate)) {
-                return candidate;
-            }
+    if (onlyDigits.length > 6) {
+        for (let i = 0; i <= onlyDigits.length - 6; i++) {
+            const cand = onlyDigits.slice(i, i + 6);
+            if (excelData?.some?.(row => row[2] === cand)) return cand;
         }
-    }
-
-    if (onlyDigits.length >= 6) {
         return onlyDigits.slice(-6);
     }
-
     return null;
 }
+
 
 
 
@@ -96,11 +220,17 @@ function checkBarcode(IDtoCheck) {
         if (studentnummer === IDtoCheck) {
             let firstName = row.cells[0].textContent.trim();
             let lastName = row.cells[1].textContent.trim();
-            let rowIndex = rows.indexOf(row) + 1;
+            const dataIndex = excelData.findIndex(r => r[2] === IDtoCheck);
+            if (dataIndex <= 0) { break; }
 
             let nonParticipant = document.getElementById("nonParticipantToggle").checked;
             let scanStatusEl = document.getElementById("scanStatus");
             scanStatusEl.style.display = "block";
+            try {
+                const prevInHist = (row.cells[4]?.textContent || "").trim();
+                const prevOutHist = (row.cells[5]?.textContent || "").trim();
+                pushHistory(IDtoCheck, prevInHist, prevOutHist);
+            } catch(e) {}
 
             if (scanMode === "in") {
                 if (row.cells[4].textContent.trim() === "" || row.cells[4].textContent === "NVT") {
@@ -108,8 +238,8 @@ function checkBarcode(IDtoCheck) {
                         row.cells[4].textContent = "Afgetekend zonder deelname";
                         row.cells[5].textContent = "Afgetekend zonder deelname";
 
-                        excelData[rowIndex][4] = "Afgetekend zonder deelname";
-                        excelData[rowIndex][5] = "Afgetekend zonder deelname";
+                        excelData[dataIndex][4] = "Afgetekend zonder deelname";
+                        excelData[dataIndex][5] = "Afgetekend zonder deelname";
 
                         row.classList.remove("match", "no-match", "row-in", "row-out");
                         row.classList.add("row-in");
@@ -121,8 +251,8 @@ function checkBarcode(IDtoCheck) {
                         row.cells[4].textContent = tijd;
                         row.cells[5].textContent = "";
 
-                        excelData[rowIndex][4] = tijd;
-                        excelData[rowIndex][5] = "";
+                        excelData[dataIndex][4] = tijd;
+                        excelData[dataIndex][5] = "";
 
                         row.classList.remove("match", "no-match", "row-in", "row-out");
                         row.classList.add("row-in");
@@ -138,7 +268,7 @@ function checkBarcode(IDtoCheck) {
                     if (nonParticipant) {
                         row.cells[5].textContent = "Afgetekend zonder deelname";
 
-                        excelData[rowIndex][5] = "Afgetekend zonder deelname";
+                        excelData[dataIndex][5] = "Afgetekend zonder deelname";
 
                         row.classList.remove("match", "no-match", "row-in", "row-out");
                         row.classList.add("row-out");
@@ -149,7 +279,7 @@ function checkBarcode(IDtoCheck) {
 
                         row.cells[5].textContent = tijd;
 
-                        excelData[rowIndex][5] = tijd;
+                        excelData[dataIndex][5] = tijd;
 
                         row.classList.remove("match", "no-match", "row-in", "row-out");
                         row.classList.add("row-out");
@@ -303,6 +433,7 @@ function rebuildTable() {
 
     updateInOutCounters();
     sessionStorage.setItem("excelData", JSON.stringify(excelData));
+    try { applyRowClasses(); } catch(e) {}    try { enableRowSelection(); } catch(e) {}
 }
 
 
@@ -493,6 +624,7 @@ function addRemark(studentNumber) {
             excelData[studentIndex][6] = existingRemarks;
 
             rebuildTable();
+            try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
             sessionStorage.setItem("excelData", JSON.stringify(excelData));
         }
     } else {
@@ -525,6 +657,11 @@ function filterTable() {
 
 // === DOMContentLoaded ===
 window.addEventListener("DOMContentLoaded", function() {
+    
+    // Undo disabled by default
+    try { document.getElementById("undoSelectedBtn").disabled = true; } catch(e) {}
+try { setupDelegatedRowSelection(); } catch(e) {}
+
     document.getElementById("manualInput").addEventListener("keydown", handleManualInput);
     document.getElementById("scanModeSwitch").addEventListener("change", toggleScanMode);
     document.getElementById("focusToggle").addEventListener("change", toggleFocus);
@@ -534,11 +671,18 @@ window.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById("scanStatus").innerHTML = "Nog niets gescand";
 
+    try { createUndoButton(); } catch(e) {}
+    try { enableRowSelection(); } catch(e) {}
+
     // === Restore examName, date, time, location ===
     if (sessionStorage.getItem("examName")) {
         document.getElementById("examInput").value = sessionStorage.getItem("examName");
         examName = sessionStorage.getItem("examName");
-    }
+    
+
+    try { createUndoButton(); } catch(e) {}
+    try { enableRowSelection(); } catch(e) {}
+}
     if (sessionStorage.getItem("examDate")) {
         document.getElementById("examDate").value = sessionStorage.getItem("examDate");
     } else {
@@ -573,8 +717,10 @@ window.addEventListener("DOMContentLoaded", function() {
 
     // === Restore excelData als het bestaat ===
     if (sessionStorage.getItem("excelData")) {
+        try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
         excelData = JSON.parse(sessionStorage.getItem("excelData"));
         rebuildTable();
+            try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
         document.getElementById("exportExcelBtn").disabled = false;
         document.getElementById("exportPdfBtn").disabled = false;
     }
@@ -628,6 +774,7 @@ window.addEventListener("DOMContentLoaded", function() {
             }
 
             rebuildTable();
+            try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
 
             totalStudents = excelData.length - 1;
             document.getElementById("exportExcelBtn").disabled = false;
@@ -657,3 +804,19 @@ window.addEventListener("DOMContentLoaded", function() {
         reader.readAsArrayBuffer(file);
     });
 });
+
+// Helper om rijen consequent te kleuren (IN/OUT/NonParticipant)
+function applyRowClasses() {
+    const table = document.getElementById("dataTable");
+    if (!table) return;
+    const rows = Array.from(table.rows).slice(1);
+    for (const tr of rows) {
+        tr.classList.remove("match","no-match","row-in","row-out","row-nonparticipant");
+        const scannedIn  = (tr.cells[4]?.textContent || "").trim();
+        const scannedOut = (tr.cells[5]?.textContent || "").trim();
+        const isNonParticipant = scannedIn === "Afgetekend zonder deelname" || scannedOut === "Afgetekend zonder deelname";
+        if (scannedIn && scannedIn !== "NVT") tr.classList.add("row-in");
+        if (scannedOut && scannedOut !== "NVT") { tr.classList.remove("row-in"); tr.classList.add("row-out"); }
+        if (isNonParticipant) tr.classList.add("row-nonparticipant");
+    }
+}
