@@ -183,31 +183,11 @@ function handleManualInput(event) {
 
 
 function extractID(barcode) {
-    const sixDigitGroups = barcode.match(/\d{6}/g) || [];
-
-    for (const cand of sixDigitGroups) {
-        if (excelData?.some?.(row => row[2] === cand)) return cand;
-    }
-    if (sixDigitGroups.length === 1) return sixDigitGroups[0];
-
-    const onlyDigits = barcode.replace(/\D/g, "");
-    if (onlyDigits.length === 6) return onlyDigits;
-
-    if (onlyDigits.length > 6) {
-        for (let i = 0; i <= onlyDigits.length - 6; i++) {
-            const cand = onlyDigits.slice(i, i + 6);
-            if (excelData?.some?.(row => row[2] === cand)) return cand;
-        }
-        return onlyDigits.slice(-6);
-    }
-    return null;
+  if (/^[a-zA-Z]0{4}/.test(barcode)) {
+    return barcode.substring(5, 11); 
+  }
+  return barcode.substring(0, 6);
 }
-
-
-
-
-
-	
 
 function checkBarcode(IDtoCheck) {
     let table = document.getElementById("dataTable");
