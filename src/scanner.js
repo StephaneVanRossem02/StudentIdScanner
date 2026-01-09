@@ -154,9 +154,23 @@ function getCurrentTimeString() {
     });
 }
 
+function mapInputToAzerty(input) {
+    const map = {
+        '!': '1', '@': '2', '#': '3', '$': '4', '%': '5',
+        '^': '6', '&': '7', '*': '8', '(': '9', ')': '0'
+    };
+    return input.split('').map(c => map[c] || c).join('');
+}
+
 function handleManualInput(event) {
     if (event.key === "Enter") {
         let input = event.target.value.trim();
+
+        const hasDigits = /\d/.test(input);
+        if (!hasDigits) {
+             input = mapInputToAzerty(input);
+        }
+
         if (input !== "") {
             let firstTryID = extractID(input, 2);
             let secondTryID = extractID(input, 1);
