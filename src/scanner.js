@@ -54,7 +54,7 @@ const table = document.getElementById("dataTable");
     excelData[dataIndex][6] = "";
 
     // Bewaar en reload UI
-    sessionStorage.setItem("excelData", JSON.stringify(excelData));
+    localStorage.setItem("excelData", JSON.stringify(excelData));
     rebuildTable();
 
             try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
@@ -158,17 +158,10 @@ function handleManualInput(event) {
     if (event.key === "Enter") {
         let input = event.target.value.trim();
         if (input !== "") {
-            let firstTryID = extractID(input, 2);
-            let secondTryID = extractID(input, 1);
+            let extractedID = extractID(input);
 
-            if (firstTryID) {
-                checkBarcode(firstTryID);
-
-                if (document.getElementById("scanStatus").innerText.includes("staat niet in de lijst")) {
-                    if (secondTryID) {
-                        checkBarcode(secondTryID);
-                    }
-                }
+            if (extractedID) {
+                checkBarcode(extractedID);
             } else {
                 document.getElementById("scanStatus").innerHTML = `<span class='error'>Barcode niet herkend: ${input}</span>`;
             }
@@ -275,7 +268,7 @@ function checkBarcode(IDtoCheck) {
             table.insertBefore(row, table.rows[1]);
 
             updateInOutCounters();
-            sessionStorage.setItem("excelData", JSON.stringify(excelData));
+            localStorage.setItem("excelData", JSON.stringify(excelData));
 
             matchFound = true;
             break;
@@ -412,7 +405,7 @@ function rebuildTable() {
     document.getElementById("totalStudents").textContent = totalStudents;
 
     updateInOutCounters();
-    sessionStorage.setItem("excelData", JSON.stringify(excelData));
+    localStorage.setItem("excelData", JSON.stringify(excelData));
     try { applyRowClasses(); } catch(e) {}    try { enableRowSelection(); } catch(e) {}
 }
 
@@ -605,7 +598,7 @@ function addRemark(studentNumber) {
 
             rebuildTable();
             try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
-            sessionStorage.setItem("excelData", JSON.stringify(excelData));
+            localStorage.setItem("excelData", JSON.stringify(excelData));
         }
     } else {
         console.log("Student niet gevonden!");
@@ -655,16 +648,16 @@ try { setupDelegatedRowSelection(); } catch(e) {}
     try { enableRowSelection(); } catch(e) {}
 
     // === Restore examName, date, time, location ===
-    if (sessionStorage.getItem("examName")) {
-        document.getElementById("examInput").value = sessionStorage.getItem("examName");
-        examName = sessionStorage.getItem("examName");
+    if (localStorage.getItem("examName")) {
+        document.getElementById("examInput").value = localStorage.getItem("examName");
+        examName = localStorage.getItem("examName");
     
 
     try { createUndoButton(); } catch(e) {}
     try { enableRowSelection(); } catch(e) {}
 }
-    if (sessionStorage.getItem("examDate")) {
-        document.getElementById("examDate").value = sessionStorage.getItem("examDate");
+    if (localStorage.getItem("examDate")) {
+        document.getElementById("examDate").value = localStorage.getItem("examDate");
     } else {
         // default datum als leeg → vandaag zetten:
         const today = new Date();
@@ -673,32 +666,32 @@ try { setupDelegatedRowSelection(); } catch(e) {}
         const year = today.getFullYear();
         document.getElementById("examDate").value = `${year}-${month}-${day}`;
     }
-    if (sessionStorage.getItem("examTime")) {
-        document.getElementById("examTime").value = sessionStorage.getItem("examTime");
+    if (localStorage.getItem("examTime")) {
+        document.getElementById("examTime").value = localStorage.getItem("examTime");
     }
-    if (sessionStorage.getItem("examLocation")) {
-        document.getElementById("examLocationInput").value = sessionStorage.getItem("examLocation");
+    if (localStorage.getItem("examLocation")) {
+        document.getElementById("examLocationInput").value = localStorage.getItem("examLocation");
     }
 
     // === Listeners voor bijhouden in sessionStorage ===
     document.getElementById("examInput").addEventListener("input", function() {
-        sessionStorage.setItem("examName", this.value);
+        localStorage.setItem("examName", this.value);
         examName = this.value;
     });
     document.getElementById("examDate").addEventListener("input", function() {
-        sessionStorage.setItem("examDate", this.value);
+        localStorage.setItem("examDate", this.value);
     });
     document.getElementById("examTime").addEventListener("input", function() {
-        sessionStorage.setItem("examTime", this.value);
+        localStorage.setItem("examTime", this.value);
     });
     document.getElementById("examLocationInput").addEventListener("input", function() {
-        sessionStorage.setItem("examLocation", this.value);
+        localStorage.setItem("examLocation", this.value);
     });
 
     // === Restore excelData als het bestaat ===
-    if (sessionStorage.getItem("excelData")) {
+    if (localStorage.getItem("excelData")) {
         try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
-        excelData = JSON.parse(sessionStorage.getItem("excelData"));
+        excelData = JSON.parse(localStorage.getItem("excelData"));
         rebuildTable();
             try { document.getElementById("undoSelectedBtn").disabled = false; } catch(e) {}
         document.getElementById("exportExcelBtn").disabled = false;
@@ -737,7 +730,7 @@ try { setupDelegatedRowSelection(); } catch(e) {}
 
             for (let i = 1; i < rawData.length; i++) {
                 const row = rawData[i];
-                const pointer = row[pointerCol] ? String(row[pointerCol]).trim() : "";
+                const pointer = row[pointerCol] ? String(row[pointerCol]).trim().padStart(6, '0') : "";
                 const studentNaam = row[studentCol] ? String(row[studentCol]).trim() : "";
                 const subgroep = row[subgroepCol] ? String(row[subgroepCol]).trim() : "";
                 const vrijstelling = row[vrijstellingCol] ? String(row[vrijstellingCol]).trim() : "";
@@ -762,7 +755,7 @@ try { setupDelegatedRowSelection(); } catch(e) {}
 
             if (focusEnabled) document.getElementById("manualInput").focus();
 
-            sessionStorage.setItem("excelData", JSON.stringify(excelData));
+            localStorage.setItem("excelData", JSON.stringify(excelData));
 
             // Bestandsnaam automatisch zetten
             let lastDashIndex = file.name.lastIndexOf("-");
@@ -777,7 +770,7 @@ try { setupDelegatedRowSelection(); } catch(e) {}
             const input = document.getElementById("examInput");
             if (input) {
                 input.value = examName;
-                sessionStorage.setItem("examName", examName);
+                localStorage.setItem("examName", examName);
             }
         };
 
