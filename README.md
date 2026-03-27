@@ -101,6 +101,11 @@ Exporteren naar PDF en Excel is voorzien.
 
 ---
 
+## Scanner vereisten
+
+Deze applicatie werkt zeker met de Data Logic Quickscan QD/QW2500 serie scanner. Via deze handleiding kan je de scanner correct instellen: [Howto Scanner Instellen](scannerInstellen/howto.md).
+
+---
 ## Dependencies
 
 - [SheetJS (XLSX.js)](https://github.com/SheetJS/sheetjs)
