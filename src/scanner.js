@@ -12,6 +12,10 @@ let totalStudents = 0;
 let scanMode = "in";
 let focusEnabled = false;
 let scannerMapping = {}; // Stores character mapping from calibration
+<<<<<<< HEAD
+=======
+
+>>>>>>> cb3af253a62656a02537395c201e339f2ecead6a
 
 // === UNDO SUPPORT ===
 let __undoKeyboardWired = false;
@@ -160,9 +164,13 @@ function loadScannerMapping() {
     if (stored) {
         try {
             scannerMapping = JSON.parse(stored);
+<<<<<<< HEAD
         } catch(e) {
             console.error("Invalid mapping in storage", e);
         }
+=======
+        } catch(e) { console.error("Invalid mapping in storage", e); }
+>>>>>>> cb3af253a62656a02537395c201e339f2ecead6a
     }
 }
 
@@ -180,10 +188,18 @@ function closeCalibration() {
 function saveCalibration() {
     const input = document.getElementById("calibrationInput").value.trim();
     const expected = "1234567890";
+<<<<<<< HEAD
+=======
+    
+>>>>>>> cb3af253a62656a02537395c201e339f2ecead6a
     if (input.length < 10) {
         alert("Invoer te kort. Typ of scan exact: 1234567890");
         return;
     }
+<<<<<<< HEAD
+=======
+    
+>>>>>>> cb3af253a62656a02537395c201e339f2ecead6a
     let tempMap = {};
     for (let i = 0; i < 10; i++) {
         const received = input[i];
@@ -217,11 +233,20 @@ function mapInputToAzerty(input) {
     return input.split('').map(c => map[c] || c).join('');
 }
 
+<<<<<<< HEAD
 
 function handleManualInput(event) {
     if (event.key === "Enter") {
         let input = event.target.value.trim();
         input = applySyncedMapping(input);
+=======
+function handleManualInput(event) {
+    if (event.key === "Enter") {
+        let input = event.target.value.trim();
+
+        input = applySyncedMapping(input);
+
+>>>>>>> cb3af253a62656a02537395c201e339f2ecead6a
         if (input !== "") {
             let extractedID = extractID(input);
 
@@ -696,7 +721,11 @@ function filterTable() {
 // === DOMContentLoaded ===
 window.addEventListener("DOMContentLoaded", function() {
     loadScannerMapping();
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> cb3af253a62656a02537395c201e339f2ecead6a
     // Undo disabled by default
     try { document.getElementById("undoSelectedBtn").disabled = true; } catch(e) {}
 try { setupDelegatedRowSelection(); } catch(e) {}
