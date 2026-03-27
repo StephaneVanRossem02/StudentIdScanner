@@ -11,6 +11,7 @@ let totalStudents = 0;
 
 let scanMode = "in";
 let focusEnabled = false;
+let scannerMapping = {}; // Stores character mapping from calibration
 
 // === UNDO SUPPORT ===
 let __undoKeyboardWired = false;
@@ -154,9 +155,73 @@ function getCurrentTimeString() {
     });
 }
 
+function loadScannerMapping() {
+    const stored = localStorage.getItem("scannerMapping");
+    if (stored) {
+        try {
+            scannerMapping = JSON.parse(stored);
+        } catch(e) {
+            console.error("Invalid mapping in storage", e);
+        }
+    }
+}
+
+function startCalibration() {
+    document.getElementById("calibrationModal").style.display = "block";
+    const inp = document.getElementById("calibrationInput");
+    inp.value = "";
+    inp.focus();
+}
+
+function closeCalibration() {
+    document.getElementById("calibrationModal").style.display = "none";
+}
+
+function saveCalibration() {
+    const input = document.getElementById("calibrationInput").value.trim();
+    const expected = "1234567890";
+    if (input.length < 10) {
+        alert("Invoer te kort. Typ of scan exact: 1234567890");
+        return;
+    }
+    let tempMap = {};
+    for (let i = 0; i < 10; i++) {
+        const received = input[i];
+        const target = expected[i];
+        if (received !== target) {
+            tempMap[received] = target;
+        }
+    }
+    scannerMapping = tempMap;
+    localStorage.setItem("scannerMapping", JSON.stringify(scannerMapping));
+    alert("Kalibratie opgeslagen!");
+    closeCalibration();
+}
+
+function applySyncedMapping(input) {
+    if (Object.keys(scannerMapping).length > 0) {
+        return input.split('').map(c => scannerMapping[c] || c).join('');
+    }
+    const hasDigits = /\d/.test(input);
+    if (!hasDigits) {
+        return mapInputToAzerty(input);
+    }
+    return input;
+}
+
+function mapInputToAzerty(input) {
+    const map = {
+        '!': '1', '@': '2', '#': '3', '$': '4', '%': '5',
+        '^': '6', '&': '7', '*': '8', '(': '9', ')': '0'
+    };
+    return input.split('').map(c => map[c] || c).join('');
+}
+
+
 function handleManualInput(event) {
     if (event.key === "Enter") {
         let input = event.target.value.trim();
+        input = applySyncedMapping(input);
         if (input !== "") {
             let extractedID = extractID(input);
 
@@ -630,7 +695,8 @@ function filterTable() {
 
 // === DOMContentLoaded ===
 window.addEventListener("DOMContentLoaded", function() {
-    
+    loadScannerMapping();
+
     // Undo disabled by default
     try { document.getElementById("undoSelectedBtn").disabled = true; } catch(e) {}
 try { setupDelegatedRowSelection(); } catch(e) {}
@@ -641,6 +707,9 @@ try { setupDelegatedRowSelection(); } catch(e) {}
 
     document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
     document.getElementById("exportPdfBtn").addEventListener("click", exportToPDF);
+    document.getElementById("calibrateBtn").addEventListener("click", startCalibration);
+    document.getElementById("saveCalibrationBtn").addEventListener("click", saveCalibration);
+    document.getElementById("cancelCalibrationBtn").addEventListener("click", closeCalibration);
 
     document.getElementById("scanStatus").innerHTML = "Nog niets gescand";
 
